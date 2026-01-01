@@ -95,7 +95,7 @@ const EmployeeDetailPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#F4F9FD]">
       <Sidebar />
       <Navbar />
 

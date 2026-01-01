@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/Sidebar';
 import Navbar from '@/components/Navbar';
 import Reminders from '@/components/Remiander';
@@ -11,6 +12,9 @@ import remindersData from '@/data/reminders.json';
 import productsData from '@/data/products.json';
 
 const DashboardPage: React.FC = () => {
+
+  const router= useRouter()
+
   const employees: Employee[] = employeesData;
   const reminders: Reminder[] = remindersData;
   const products: ProductSale[] = productsData;
@@ -46,12 +50,9 @@ const DashboardPage: React.FC = () => {
       <Sidebar />
       <Navbar />
 
-      {/* Main Content */}
       <main className="ml-64 mt-16 p-6">
         <div className="flex gap-6">
-          {/* Left Column - Main Content */}
           <div className="flex-1">
-            {/* Welcome Header */}
             <div className="mb-6">
               <p className="text-gray-600 text-sm mb-1">Welcome back, Evan!</p>
               <h1 className="text-3xl font-bold text-[#00337C]">Dashboard</h1>
@@ -70,7 +71,8 @@ const DashboardPage: React.FC = () => {
 
               <div className="grid grid-cols-3 gap-6">
                 {employees.slice(0, 6).map((employee) => (
-                  <div key={employee.id} className="flex flex-col items-center bg-[#F4F9FD] py-5 px-2 rounded-3xl">
+                  <div key={employee.id} onClick={() => router.push(`/employees/${employee.id}`)}
+                  className="flex flex-col items-center bg-[#F4F9FD] py-5 px-2 rounded-3xl cursor-pointer">
                     <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 mb-3 flex items-center justify-center text-white text-xl font-semibold">
                       {employee.name.split(' ').map(n => n[0]).join('')}
                     </div>
@@ -88,9 +90,11 @@ const DashboardPage: React.FC = () => {
             <div className="bg-white rounded-3xl border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-semibold text-gray-900">Products Sales</h2>
-                <button className="text-sm text-[#3B5BA5] hover:underline font-medium">
+                <Link href="/sales">
+                <button className="text-sm text-[#3B5BA5] cursor-pointer font-medium">
                   View all →
                 </button>
+                </Link>
               </div>
 
               <div className="space-y-4">
@@ -114,7 +118,6 @@ const DashboardPage: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* Priority */}
                       <div className="flex items-center gap-1 mx-6">
                         <svg className={`w-5 h-5 ${getPriorityColor(product.priority)}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
@@ -163,7 +166,7 @@ const DashboardPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Right Column - Reminders (Sticky) */}
+          {/* Reminders */}
           <div className="w-80">
             <Reminders reminders={reminders} />
           </div>

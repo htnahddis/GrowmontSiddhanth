@@ -36,34 +36,38 @@ export default function InfoPortalPage() {
       <Sidebar />
         <Navbar />
 
-      <div className="flex-1 ml-64 mt-16 p-6">
+      <div className="ml-64 mt-16">
 
         <div className="p-6">
+            <div className='justify-between mb-6'>
               <h1 className="text-3xl font-bold text-[#00337C] mb-5">Info Portal</h1>
 
           {/* Tabs */}
-          <div className="flex gap-4 bg-white p-2 rounded-xl w-fit mb-6">
-            <button
-              onClick={() => setActiveTab('sales')}
-              className={`px-6 py-2 rounded-lg text-sm font-medium ${
-                activeTab === 'sales'
-                  ? 'bg-[#E9EFF5] text-[#00337C]'
-                  : 'text-gray-500'
-              }`}
-            >
-              Sales
-            </button>
-            <button
-              onClick={() => setActiveTab('interactions')}
-              className={`px-6 py-2 rounded-lg text-sm font-medium ${
-                activeTab === 'interactions'
-                  ? 'bg-[#E9EFF5] text-[#00337C]'
-                  : 'text-gray-500'
-              }`}
-            >
-              Interactions
-            </button>
-          </div>
+          <div className="flex bg-gray-200 rounded-3xl p-1">
+              <button
+                onClick={() => setActiveTab('sales')}
+                className={`px-6 py-2 rounded-3xl font-medium transition-colors ${
+                  activeTab === 'sales'
+                    ? 'bg-[#2D8A4E] text-white'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Sales
+              </button>
+              <button
+                onClick={() => setActiveTab('interactions')}
+                className={`px-6 py-2 rounded-3xl font-medium transition-colors ${
+                  activeTab === 'interactions'
+                    ? 'bg-[#2D8A4E] text-white'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Interactions
+              </button>
+            </div>
+            </div>
+
+          
 
           {/* Card */}
           <div className="bg-white rounded-2xl p-5 shadow-sm">
@@ -81,7 +85,7 @@ export default function InfoPortalPage() {
                 <button className="px-4 py-2 text-sm border rounded-lg">Delete</button>
                 <button className="px-4 py-2 text-sm border rounded-lg">Filters</button>
                 <button className="px-4 py-2 text-sm border rounded-lg">Export</button>
-                <button className="px-4 py-2 text-sm bg-[#1C7947] text-white rounded-lg">
+                <button className="px-4 py-2 text-sm cursor-pointer bg-[#2D8A4E] text-white rounded-lg">
                   + Add new
                 </button>
               </div>

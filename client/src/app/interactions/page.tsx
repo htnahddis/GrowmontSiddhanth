@@ -92,10 +92,10 @@ const InteractionsPage = () => {
       <Sidebar />
      <Navbar />
       <div className="flex-1 flex flex-col overflow-hidden ml-64 mt-16 p-6">
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto">
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-3xl font-bold text-[#00337C]">Interactions</h1>
-            <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition">
+            <button className="bg-[#2D8A4E] hover:bg-[#236b3d] transition-colors text-white px-4 py-2 rounded-lg flex items-center gap-2 cursor-pointer font-medium">
               <span className="text-lg">+</span>
               Add Interactions
             </button>
@@ -130,7 +130,7 @@ const InteractionsPage = () => {
                       onClick={() => setSelectedCategory(category.id)}
                       className={`cursor-pointer p-3 rounded-lg transition ${
                         selectedCategory === category.id
-                          ? "bg-blue-50 border-l-4 border-blue-500"
+                          ? "bg-[#00337C]/11 border-l-4 border-[#00337C]"
                           : "hover:bg-gray-50"
                       }`}
                     >
@@ -170,7 +170,7 @@ const InteractionsPage = () => {
                   </button>
                 </div>
 
-                <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                <div className="bg-[#F4F9FD] rounded-lg p-4 mb-4">
                   <h3 className="text-sm font-semibold text-gray-700 mb-4">
                     All Interactions
                   </h3>

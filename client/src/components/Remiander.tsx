@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import React from 'react';
 
 interface Reminder {
@@ -40,9 +41,11 @@ const Reminders: React.FC<RemindersProps> = ({ reminders }) => {
     <div className="sticky top-20 bg-white rounded-3xl border border-gray-200 p-5">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-gray-900">Your Reminders</h2>
-        <button className="text-sm text-[#3B5BA5] hover:underline font-medium">
+        <Link href="/profile">
+        <button className="text-sm text-[#3B5BA5] cursor-pointer font-medium">
           View all →
         </button>
+        </Link>
       </div>
 
       {/* Reminders List */}
