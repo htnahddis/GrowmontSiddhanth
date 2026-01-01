@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 
 const Navbar: React.FC = () => {
   const [searchValue, setSearchValue] = useState('');
@@ -37,7 +38,7 @@ const Navbar: React.FC = () => {
         
         {/* User Profile */}
         <div className="flex items-center gap-4">
-          <button className="relative p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+          <button className="relative p-3 cursor-pointer text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
@@ -48,7 +49,8 @@ const Navbar: React.FC = () => {
             </svg>
           </button>
 
-          <div className="flex items-center gap-2">
+          <Link href="/profile">
+          <div className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded-2xl cursor-pointer">
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-pink-400 flex items-center justify-center text-white font-semibold">
               EY
             </div>
@@ -59,6 +61,7 @@ const Navbar: React.FC = () => {
               </svg>
             </div>
           </div>
+          </Link>
         </div>
       </div>
     </nav>

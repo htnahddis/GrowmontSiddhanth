@@ -1,0 +1,128 @@
+{
+  "categories": [
+    {
+      "id": "insurance",
+      "name": "Insurance",
+      "label": "Insurance"
+    },
+    {
+      "id": "mutual-funds",
+      "name": "Mutual Funds",
+      "label": "Mutual Funds"
+    },
+    {
+      "id": "bonds",
+      "name": "Bonds",
+      "label": "Bonds"
+    },
+    {
+      "id": "etf",
+      "name": "ETFs",
+      "label": "ETF"
+    }
+  ],
+  "clients": [
+    {
+      "id": "1",
+      "name": "Client 1",
+      "date": "9th Nov, 25",
+      "spentTime": "1d 2h",
+      "assignee": {
+        "name": "John Doe",
+        "avatar": "https://i.pravatar.cc/150?img=1"
+      },
+      "priority": "Medium",
+      "status": "Done",
+      "category": "insurance"
+    },
+    {
+      "id": "2",
+      "name": "Client 2",
+      "date": "9th Nov, 25",
+      "spentTime": "4h 25m",
+      "assignee": {
+        "name": "Jane Smith",
+        "avatar": "https://i.pravatar.cc/150?img=2"
+      },
+      "priority": "Medium",
+      "status": "In Progress",
+      "category": "insurance"
+    },
+    {
+      "id": "3",
+      "name": "Client 3",
+      "date": "9th Nov, 25",
+      "spentTime": "2d 2h 20m",
+      "assignee": {
+        "name": "Mike Johnson",
+        "avatar": "https://i.pravatar.cc/150?img=3"
+      },
+      "priority": "Low",
+      "status": "In Progress",
+      "category": "mutual-funds"
+    },
+    {
+      "id": "4",
+      "name": "Client 4",
+      "date": "9th Nov, 25",
+      "spentTime": "3h 15m",
+      "assignee": {
+        "name": "Sarah Williams",
+        "avatar": "https://i.pravatar.cc/150?img=4"
+      },
+      "priority": "Low",
+      "status": "To Do",
+      "category": "bonds"
+    },
+    {
+      "id": "5",
+      "name": "Client 5",
+      "date": "9th Nov, 25",
+      "spentTime": "4h",
+      "assignee": {
+        "name": "David Brown",
+        "avatar": "https://i.pravatar.cc/150?img=5"
+      },
+      "priority": "Medium",
+      "status": "In Review",
+      "category": "etf"
+    },
+    {
+      "id": "6",
+      "name": "Client 6",
+      "date": "9th Nov, 25",
+      "spentTime": "2d 2h 20m",
+      "assignee": {
+        "name": "Emily Davis",
+        "avatar": "https://i.pravatar.cc/150?img=6"
+      },
+      "priority": "Low",
+      "status": "In Progress",
+      "category": "insurance"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "1",
+      "name": "Animation for buttons",
+      "estimate": "6h",
+      "spentTime": "0h",
+      "assignee": {
+        "name": "Alex Turner",
+        "avatar": "https://i.pravatar.cc/150?img=7"
+      },
+      "priority": "Medium"
+    },
+    {
+      "id": "2",
+      "name": "Preloader",
+      "estimate": "2d",
+      "spentTime": "0h",
+      "assignee": {
+        "name": "Chris Evans",
+        "avatar": "https://i.pravatar.cc/150?img=8"
+      },
+      "priority": "Low"
+    }
+  ]
+}

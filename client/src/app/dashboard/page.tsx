@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import Sidebar from '@/components/Sidebar';
 import Navbar from '@/components/Navbar';
 import Reminders from '@/components/Remiander';
@@ -55,18 +56,20 @@ const DashboardPage: React.FC = () => {
               <p className="text-gray-600 text-sm mb-1">Welcome back, Evan!</p>
               <h1 className="text-3xl font-bold text-[#00337C]">Dashboard</h1>
             </div>
-
+    
             {/* Employees Section */}
             <div className="bg-white rounded-3xl border border-gray-200 p-6 mb-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-semibold text-gray-900">Employees</h2>
-                <button className="text-sm text-[#3B5BA5] hover:underline font-medium">
+                <Link href="/employees">
+                <button className="text-sm text-[#3B5BA5] font-medium cursor-pointer">
                   View all →
                 </button>
+                </Link>
               </div>
 
-              <div className="grid grid-cols-4 gap-6">
-                {employees.map((employee) => (
+              <div className="grid grid-cols-3 gap-6">
+                {employees.slice(0, 6).map((employee) => (
                   <div key={employee.id} className="flex flex-col items-center bg-[#F4F9FD] py-5 px-2 rounded-3xl">
                     <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 mb-3 flex items-center justify-center text-white text-xl font-semibold">
                       {employee.name.split(' ').map(n => n[0]).join('')}

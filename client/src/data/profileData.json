@@ -1,0 +1,142 @@
+{
+  "user": {
+    "id": "1",
+    "name": "Evan Yates",
+    "position": "Executive",
+    "department": "Sales",
+    "location": "Mumbai",
+    "birthday": "1990-05-15",
+    "email": "evanyates@gmail.com",
+    "mobile": "+1 675 346 23-10",
+    "skype": "Evan 2256",
+    "avatar": "https://i.pravatar.cc/150?img=12"
+  },
+  "clients": [
+    {
+      "id": "1",
+      "name": "Shawn Stone",
+      "category": "Insurance",
+      "level": "Middle",
+      "avatar": "https://i.pravatar.cc/150?img=13"
+    },
+    {
+      "id": "2",
+      "name": "Randy Delgado",
+      "category": "Mutual Funds",
+      "level": "Junior",
+      "avatar": "https://i.pravatar.cc/150?img=14"
+    },
+    {
+      "id": "3",
+      "name": "Emily Tyler",
+      "category": "ETF",
+      "level": "Middle",
+      "avatar": "https://i.pravatar.cc/150?img=15"
+    },
+    {
+      "id": "4",
+      "name": "Blake Silva",
+      "category": "Insurance",
+      "level": "Senior",
+      "avatar": "https://i.pravatar.cc/150?img=16"
+    }
+  ],
+  "productSales": [
+    {
+      "id": "1",
+      "productId": "PN0001265",
+      "clientName": "Client Name",
+      "createdDate": "Sep 12, 2020",
+      "priority": "Medium",
+      "category": "Insurance",
+      "amount": 34,
+      "categoryCount": 13,
+      "representatives": [
+        "https://i.pravatar.cc/150?img=17",
+        "https://i.pravatar.cc/150?img=18",
+        "https://i.pravatar.cc/150?img=19",
+        "https://i.pravatar.cc/150?img=20"
+      ]
+    },
+    {
+      "id": "2",
+      "productId": "PN0001265",
+      "clientName": "Client Name",
+      "createdDate": "Sep 12, 2020",
+      "priority": "Medium",
+      "category": "Insurance",
+      "amount": 34,
+      "categoryCount": 13,
+      "representatives": [
+        "https://i.pravatar.cc/150?img=21",
+        "https://i.pravatar.cc/150?img=22",
+        "https://i.pravatar.cc/150?img=23",
+        "https://i.pravatar.cc/150?img=24"
+      ]
+    },
+    {
+      "id": "3",
+      "productId": "PN0001265",
+      "clientName": "Client Name",
+      "createdDate": "Sep 12, 2020",
+      "priority": "Medium",
+      "category": "Insurance",
+      "amount": 34,
+      "categoryCount": 13,
+      "representatives": [
+        "https://i.pravatar.cc/150?img=25",
+        "https://i.pravatar.cc/150?img=26",
+        "https://i.pravatar.cc/150?img=27",
+        "https://i.pravatar.cc/150?img=28"
+      ]
+    },
+    {
+      "id": "4",
+      "productId": "PN0001265",
+      "clientName": "Client Name",
+      "createdDate": "Sep 12, 2020",
+      "priority": "Medium",
+      "category": "Insurance",
+      "amount": 34,
+      "categoryCount": 13,
+      "representatives": [
+        "https://i.pravatar.cc/150?img=29",
+        "https://i.pravatar.cc/150?img=30",
+        "https://i.pravatar.cc/150?img=31",
+        "https://i.pravatar.cc/150?img=32"
+      ]
+    }
+  ],
+  "reminders": [
+    {
+      "id": "1",
+      "title": "Presentation of the new department",
+      "date": "Today",
+      "time": "6:00 PM",
+      "duration": "4h",
+      "priority": "high",
+      "icon": "document",
+      "color": "blue"
+    },
+    {
+      "id": "2",
+      "title": "Meeting with Development Team",
+      "date": "Tomorrow",
+      "time": "5:00 PM",
+      "duration": "4h",
+      "priority": "high",
+      "icon": "meeting",
+      "color": "yellow"
+    },
+    {
+      "id": "3",
+      "title": "Meeting with CEO",
+      "date": "Sep 14",
+      "time": "5:00 PM",
+      "duration": "1h",
+      "priority": "high",
+      "icon": "document",
+      "color": "blue"
+    }
+  ]
+}

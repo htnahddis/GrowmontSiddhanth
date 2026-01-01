@@ -38,7 +38,6 @@ const Reminders: React.FC<RemindersProps> = ({ reminders }) => {
 
   return (
     <div className="sticky top-20 bg-white rounded-3xl border border-gray-200 p-5">
-      {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-gray-900">Your Reminders</h2>
         <button className="text-sm text-[#3B5BA5] hover:underline font-medium">
