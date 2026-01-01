@@ -1,0 +1,58 @@
+[
+  {
+    "id": "1",
+    "name": "Shawn Stone",
+    "department": "Sales",
+    "level": "Middle",
+    "avatar": "/avatars/shawn.jpg"
+  },
+  {
+    "id": "2",
+    "name": "Randy Delgado",
+    "department": "Sales",
+    "level": "Junior",
+    "avatar": "/avatars/randy.jpg"
+  },
+  {
+    "id": "3",
+    "name": "Emily Tyler",
+    "department": "Sales",
+    "level": "Middle",
+    "avatar": "/avatars/emily.jpg"
+  },
+  {
+    "id": "4",
+    "name": "Louis Castro",
+    "department": "Sales",
+    "level": "Senior",
+    "avatar": "/avatars/louis.jpg"
+  },
+  {
+    "id": "5",
+    "name": "Blake Silva",
+    "department": "Tech",
+    "level": "Senior",
+    "avatar": "/avatars/blake.jpg"
+  },
+  {
+    "id": "6",
+    "name": "Joel Phillips",
+    "department": "Sales",
+    "level": "Middle",
+    "avatar": "/avatars/joel.jpg"
+  },
+  {
+    "id": "7",
+    "name": "Wayne Marsh",
+    "department": "Sales",
+    "level": "Junior",
+    "avatar": "/avatars/wayne.jpg"
+  },
+  {
+    "id": "8",
+    "name": "Oscar Holloway",
+    "department": "Sales",
+    "level": "Middle",
+    "avatar": "/avatars/oscar.jpg"
+  }
+]
