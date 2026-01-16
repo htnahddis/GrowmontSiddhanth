@@ -110,9 +110,9 @@ const Sidebar: React.FC = () => {
               <li key={item.id}>
                 <Link
                   href={item.href}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors fill-white ${
                     isActive
-                      ? "bg-[#00337C]/11 text-[#00337C]"
+                      ? "bg-[#00337C]/11  text-[#00337C]"
                       : "text-[#7D8592] hover:bg-gray-100"
                   }`}
                 >

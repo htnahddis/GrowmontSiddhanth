@@ -21,7 +21,10 @@ from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
-from core.views import health_check, protected_view, LogoutView
+from core.views import (
+    health_check, protected_view, LogoutView, sales_list, interactions_list,
+    employee_clients,employee_detail,employee_sales, employees_list       
+    )
 
 
 urlpatterns = [
@@ -33,4 +36,12 @@ urlpatterns = [
     path('api/auth/login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/auth/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path("api/auth/logout/", LogoutView.as_view(), name="logout"),
+
+    path('api/sales/', sales_list),
+    path('api/interactions/', interactions_list),
+
+    path('api/employees/', employees_list),
+    path('api/employees/<int:id>/', employee_detail),
+    path('api/employees/<int:id>/clients/', employee_clients),
+    path('api/employees/<int:id>/sales/', employee_sales),
 ]

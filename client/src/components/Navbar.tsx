@@ -52,10 +52,10 @@ const Navbar: React.FC = () => {
           <Link href="/profile">
           <div className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded-2xl cursor-pointer">
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-pink-400 flex items-center justify-center text-white font-semibold">
-              EY
+              S
             </div>
             <div className="flex items-center gap-1">
-              <span className="font-medium text-gray-900">Evan Yates</span>
+              <span className="font-medium text-gray-900">Sneha</span>
               <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
