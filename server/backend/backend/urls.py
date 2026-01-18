@@ -23,7 +23,9 @@ from rest_framework_simplejwt.views import (
 )
 from core.views import (
     health_check, protected_view, LogoutView, sales_list, interactions_list,
-    employee_clients,employee_detail,employee_sales, employees_list       
+    employee_clients,employee_detail,employee_sales, employees_list,    
+    export_sales_excel,export_interactions_excel,import_sales_excel,import_interactions_excel,
+    create_sale, create_interaction, delete_interaction, delete_sale
     )
 
 
@@ -44,4 +46,15 @@ urlpatterns = [
     path('api/employees/<int:id>/', employee_detail),
     path('api/employees/<int:id>/clients/', employee_clients),
     path('api/employees/<int:id>/sales/', employee_sales),
+
+    path('api/export/sales/', export_sales_excel),
+    path('api/export/interactions/', export_interactions_excel),
+    path('api/import/sales/', import_sales_excel),
+    path('api/import/interactions/', import_interactions_excel),
+
+    path('api/sales/create/', create_sale),
+    path('api/interactions/create/', create_interaction),
+    path('api/sales/<int:pk>/delete/', delete_sale),
+    path('api/interactions/<int:pk>/delete/', delete_interaction),
+
 ]
