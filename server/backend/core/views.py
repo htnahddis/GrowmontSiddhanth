@@ -20,9 +20,7 @@ from .serializers import (
 )
 
 
-# --------------------
 # Health Check
-# --------------------
 @api_view(["GET"])
 def health_check(request):
     return Response({
