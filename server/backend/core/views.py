@@ -63,8 +63,31 @@ class LogoutView(APIView):
 # --------------------
 # Employees APIs  ✅ NEW
 # --------------------
-@api_view(['GET'])
+# @api_view(['GET'])
+# def employees_list(request):
+#     employees = Employee.objects.annotate(
+#         clients_count=Count('clients', distinct=True),
+#         sales_count=Count('sales', distinct=True),
+#         interactions_count=Count('interactions', distinct=True),
+#     )
+#     serializer = EmployeeSerializer(employees, many=True)
+#     return Response(serializer.data)
+
+from rest_framework.parsers import MultiPartParser, FormParser
+
+@api_view(['GET', 'POST'])
+@parser_classes([MultiPartParser, FormParser])
 def employees_list(request):
+
+    # 🔹 CREATE EMPLOYEE
+    if request.method == 'POST':
+        serializer = EmployeeSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=201)
+        return Response(serializer.errors, status=400)
+
+    # 🔹 LIST EMPLOYEES
     employees = Employee.objects.annotate(
         clients_count=Count('clients', distinct=True),
         sales_count=Count('sales', distinct=True),
@@ -72,7 +95,6 @@ def employees_list(request):
     )
     serializer = EmployeeSerializer(employees, many=True)
     return Response(serializer.data)
-
 
 @api_view(['GET'])
 def employee_detail(request, id):
@@ -294,3 +316,13 @@ def delete_sale(request, pk):
 def delete_interaction(request, pk):
     Interaction.objects.filter(id=pk).delete()
     return Response({'status': 'deleted'})
+
+# core/views.py
+@api_view(['POST'])
+@parser_classes([MultiPartParser])
+def create_employee(request):
+    serializer = EmployeeSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=201)
+    return Response(serializer.errors, status=400)

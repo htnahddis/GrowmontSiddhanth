@@ -1,9 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import Navbar from "@/components/Navbar";
-import data from "@/data/data.json";
+import toast from "react-hot-toast";
+
+/* ✅ ADD MODAL */
+import AddInteractionModal from "@/components/AddInteractionsModal";
 
 interface Assignee {
   name: string;
@@ -38,10 +41,43 @@ interface Category {
 
 const InteractionsPage = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>("insurance");
+  const [clients, setClients] = useState<Client[]>([]);
+  const [showModal, setShowModal] = useState(false);
 
-  const categories = data.categories as Category[];
-  const clients = data.clients as Client[];
-  const tasks = data.tasks as Task[];
+  /* ✅ STATIC CATEGORIES (UNCHANGED UI) */
+  const categories: Category[] = [
+    { id: "insurance", name: "Insurance", label: "Category" },
+    { id: "followup", name: "Follow Up", label: "Category" },
+    { id: "meeting", name: "Meetings", label: "Category" },
+  ];
+
+  /* ✅ STATIC TASKS (LEFT AS-IS) */
+  const tasks: Task[] = [];
+
+  /* ================= FETCH INTERACTIONS FROM DB ================= */
+
+  useEffect(() => {
+    fetch("http://127.0.0.1:8000/api/interactions/")
+      .then((res) => res.json())
+      .then((data) => {
+        const mapped = data.map((i: any) => ({
+          id: i.id,
+          name: i.client.name,
+          date: i.date,
+          spentTime: "30 mins",
+          assignee: {
+            name: i.employee?.name || "Manager",
+            avatar: "/avatar.png",
+          },
+          priority: "Medium",
+          status: "In Progress",
+          category: "insurance",
+        }));
+
+        setClients(mapped);
+      })
+      .catch(() => toast.error("Failed to load interactions"));
+  }, []);
 
   const filteredClients = clients.filter(
     (client) => client.category === selectedCategory
@@ -90,12 +126,18 @@ const InteractionsPage = () => {
   return (
     <div className="min-h-screen bg-[#F4F9FD]">
       <Sidebar />
-     <Navbar />
+      <Navbar />
+
       <div className="flex-1 flex flex-col overflow-hidden ml-64 mt-16 p-6">
         <main className="flex-1 overflow-y-auto">
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-3xl font-bold text-[#00337C]">Interactions</h1>
-            <button className="bg-[#2D8A4E] hover:bg-[#236b3d] transition-colors text-white px-4 py-2 rounded-lg flex items-center gap-2 cursor-pointer font-medium">
+
+            {/* ✅ OPEN MODAL */}
+            <button
+              onClick={() => setShowModal(true)}
+              className="bg-[#2D8A4E] hover:bg-[#236b3d] transition-colors text-white px-4 py-2 rounded-lg flex items-center gap-2 cursor-pointer font-medium"
+            >
               <span className="text-lg">+</span>
               Add Interactions
             </button>
@@ -109,20 +151,8 @@ const InteractionsPage = () => {
                   <h2 className="font-semibold text-gray-900">
                     Current Interactions
                   </h2>
-                  <svg
-                    className="w-4 h-4 text-gray-500"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
                 </div>
+
                 <div className="space-y-2">
                   {categories.map((category) => (
                     <div
@@ -149,31 +179,15 @@ const InteractionsPage = () => {
             {/* Right Panel - Interactions Overview */}
             <div className="col-span-9">
               <div className="bg-white rounded-lg shadow-sm p-6">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-semibold text-gray-900">
-                    Interactions Overview
-                  </h2>
-                  <button className="p-2 hover:bg-gray-100 rounded-lg transition">
-                    <svg
-                      className="w-5 h-5 text-gray-600"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
-                      />
-                    </svg>
-                  </button>
-                </div>
+                <h2 className="text-xl font-semibold text-gray-900 mb-6">
+                  Interactions Overview
+                </h2>
 
                 <div className="bg-[#F4F9FD] rounded-lg p-4 mb-4">
                   <h3 className="text-sm font-semibold text-gray-700 mb-4">
                     All Interactions
                   </h3>
+
                   <div className="space-y-3">
                     {filteredClients.map((client) => (
                       <div
@@ -186,10 +200,14 @@ const InteractionsPage = () => {
                             {client.name}
                           </p>
                         </div>
+
                         <div className="flex-1">
                           <p className="text-xs text-gray-500 mb-1">Date</p>
-                          <p className="text-sm text-gray-700">{client.date}</p>
+                          <p className="text-sm text-gray-700">
+                            {client.date}
+                          </p>
                         </div>
+
                         <div className="flex-1">
                           <p className="text-xs text-gray-500 mb-1">
                             Spent Time
@@ -198,6 +216,7 @@ const InteractionsPage = () => {
                             {client.spentTime}
                           </p>
                         </div>
+
                         <div className="flex-1">
                           <p className="text-xs text-gray-500 mb-1">Assignee</p>
                           <img
@@ -206,6 +225,7 @@ const InteractionsPage = () => {
                             className="w-8 h-8 rounded-full"
                           />
                         </div>
+
                         <div className="flex-1">
                           <p className="text-xs text-gray-500 mb-1">Priority</p>
                           <p
@@ -213,70 +233,38 @@ const InteractionsPage = () => {
                               client.priority
                             )}`}
                           >
-                            {getPriorityIcon(client.priority)} {client.priority}
+                            {getPriorityIcon(client.priority)}{" "}
+                            {client.priority}
                           </p>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <span
-                            className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                              client.status
-                            )}`}
-                          >
-                            {client.status}
-                          </span>
-                          <div className="w-10 h-10 rounded-full border-4 border-blue-500 border-t-transparent animate-spin-slow"></div>
-                        </div>
+
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                            client.status
+                          )}`}
+                        >
+                          {client.status}
+                        </span>
                       </div>
                     ))}
                   </div>
-                </div>
-
-                {/* Tasks Section */}
-                <div className="space-y-3 mt-6">
-                  {tasks.map((task) => (
-                    <div
-                      key={task.id}
-                      className="bg-white p-4 rounded-lg flex items-center justify-between border border-gray-200 hover:shadow-md transition"
-                    >
-                      <div className="flex-1">
-                        <p className="text-xs text-gray-500 mb-1">Task Name</p>
-                        <p className="font-medium text-gray-900">{task.name}</p>
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-xs text-gray-500 mb-1">Estimate</p>
-                        <p className="text-sm text-gray-700">{task.estimate}</p>
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-xs text-gray-500 mb-1">Spent Time</p>
-                        <p className="text-sm text-gray-700">{task.spentTime}</p>
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-xs text-gray-500 mb-1">Assignee</p>
-                        <img
-                          src={task.assignee.avatar}
-                          alt={task.assignee.name}
-                          className="w-8 h-8 rounded-full"
-                        />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-xs text-gray-500 mb-1">Priority</p>
-                        <p
-                          className={`text-sm font-medium flex items-center gap-1 ${getPriorityColor(
-                            task.priority
-                          )}`}
-                        >
-                          {getPriorityIcon(task.priority)} {task.priority}
-                        </p>
-                      </div>
-                      <div className="w-10 h-10 rounded-full border-4 border-gray-300"></div>
-                    </div>
-                  ))}
                 </div>
               </div>
             </div>
           </div>
         </main>
       </div>
+
+      {/* ✅ ADD INTERACTION MODAL */}
+      <AddInteractionModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        onSave={() => {
+          toast.success("Interaction added");
+          setShowModal(false);
+          window.location.reload();
+        }}
+      />
     </div>
   );
 };

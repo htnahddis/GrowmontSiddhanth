@@ -1,21 +1,71 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 
 interface AddEmployeeModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
 const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
   isOpen,
   onClose,
+  onSuccess,
 }) => {
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    mobile_no: "",
+    gender: "M",
+    dob: "",
+  });
+
+  const [avatar, setAvatar] = useState<File | null>(null);
+  const [loading, setLoading] = useState(false);
+
   if (!isOpen) return null;
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async () => {
+    setLoading(true);
+
+    const formData = new FormData();
+    formData.append("name", form.name);
+    formData.append("email", form.email);
+    formData.append("mobile_no", form.mobile_no);
+    formData.append("gender", form.gender);
+    formData.append("dob", form.dob);
+    if (avatar) formData.append("avatar", avatar);
+
+    const res = await fetch("http://127.0.0.1:8000/api/employees/", {
+      method: "POST",
+      body: formData,
+    });
+
+    setLoading(false);
+
+    if (res.ok) {
+      onSuccess?.();
+      onClose();
+    } 
+    const result = await res.json();
+
+if (!res.ok) {
+  console.error("Backend error:", result);
+  alert(JSON.stringify(result));
+  return;
+}
+
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#1C7947]/30">
       <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-blue-700">
@@ -26,94 +76,78 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
 
         {/* Form */}
         <div className="space-y-4">
+
           <input
-            type="text"
+            name="name"
+            value={form.name}
+            onChange={handleChange}
             placeholder="Employee Name"
             className="w-full rounded-lg border px-4 py-2"
           />
 
-          <div>
-            <label className="text-sm text-gray-500">Department</label>
-            <select className="w-full rounded-lg border px-4 py-2">
-              <option>Corporate Event</option>
-              <option>HR</option>
-              <option>Engineering</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="text-sm text-gray-500">Role</label>
-            <select className="w-full rounded-lg border px-4 py-2">
-              <option>Manager</option>
-              <option>Developer</option>
-              <option>Designer</option>
-            </select>
-          </div>
-
-          <div className="flex gap-3">
-            <input
-              type="date"
-              className="w-full rounded-lg border px-4 py-2"
-            />
-            <input
-              type="number"
-              placeholder="Age"
-              className="w-full rounded-lg border px-4 py-2"
-            />
-          </div>
-
-          <textarea
-            placeholder="Add some description of the event"
+          <input
+            name="email"
+            value={form.email}
+            onChange={handleChange}
+            placeholder="Email"
+            type="email"
             className="w-full rounded-lg border px-4 py-2"
-            rows={3}
           />
 
-          {/* Activation */}
-          <div className="flex items-center justify-between rounded-lg bg-gray-50 px-4 py-3">
-            <span className="font-medium">Activation</span>
-            <input type="checkbox" className="h-5 w-5 accent-green-600" />
-          </div>
+          <input
+            name="mobile_no"
+            value={form.mobile_no}
+            onChange={handleChange}
+            placeholder="Mobile Number"
+            className="w-full rounded-lg border px-4 py-2"
+          />
 
           {/* Gender */}
           <div>
             <p className="mb-2 text-sm text-gray-500">Gender</p>
             <div className="flex gap-2">
-              {["Male", "Female", "Others"].map((g) => (
+              {[
+                { label: "Male", value: "M" },
+                { label: "Female", value: "F" },
+                { label: "Others", value: "O" },
+              ].map(g => (
                 <button
-                  key={g}
-                  className="flex-1 rounded-lg border px-3 py-2 text-sm hover:bg-green-600 hover:text-white"
+                  key={g.value}
+                  type="button"
+                  onClick={() => setForm({ ...form, gender: g.value })}
+                  className={`flex-1 rounded-lg border px-3 py-2 text-sm
+                    ${form.gender === g.value
+                      ? "bg-green-600 text-white"
+                      : "hover:bg-green-600 hover:text-white"}`}
                 >
-                  {g}
+                  {g.label}
                 </button>
               ))}
             </div>
-          </div>
-
-          {/* Workdays */}
-          <div>
-            <p className="mb-2 text-sm text-gray-500">Workdays</p>
-            <div className="flex flex-wrap gap-2">
-              {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
-                <button
-                  key={d}
-                  className="rounded-md bg-gray-100 px-3 py-1 text-sm hover:bg-green-600 hover:text-white"
-                >
-                  {d}
-                </button>
-              ))}
-            </div>
-            <label className="mt-2 flex items-center gap-2 text-sm">
-              <input type="checkbox" /> Repeat every day
-            </label>
           </div>
 
           <input
-            type="time"
+            name="dob"
+            value={form.dob}
+            onChange={handleChange}
+            type="date"
             className="w-full rounded-lg border px-4 py-2"
           />
 
-          <button className="w-full rounded-xl py-2 text-white hover:bg-[#236b3d] transition-colors cursor-pointer bg-[#2D8A4E]">
-            Save Event
+          {/* Avatar */}
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setAvatar(e.target.files?.[0] || null)}
+            className="w-full text-sm"
+          />
+
+          <button
+            onClick={handleSubmit}
+            disabled={loading}
+            className="w-full rounded-xl py-2 text-white transition-colors bg-[#2D8A4E] hover:bg-[#236b3d]"
+          >
+            {loading ? "Saving..." : "Save Employee"}
           </button>
         </div>
       </div>

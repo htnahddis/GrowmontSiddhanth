@@ -25,7 +25,7 @@ from core.views import (
     health_check, protected_view, LogoutView, sales_list, interactions_list,
     employee_clients,employee_detail,employee_sales, employees_list,    
     export_sales_excel,export_interactions_excel,import_sales_excel,import_interactions_excel,
-    create_sale, create_interaction, delete_interaction, delete_sale
+    create_sale, create_interaction, delete_interaction, delete_sale, create_employee
     )
 
 
@@ -56,5 +56,9 @@ urlpatterns = [
     path('api/interactions/create/', create_interaction),
     path('api/sales/<int:pk>/delete/', delete_sale),
     path('api/interactions/<int:pk>/delete/', delete_interaction),
+
+    # backend/urls.py
+    path('api/employees/', create_employee),
+
 
 ]

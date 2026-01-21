@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import Navbar from "@/components/Navbar";
 import data from "@/data/data.json";
+import AddSalesModal from "@/components/AddSalesModal";
 
 interface Assignee {
   name: string;
@@ -38,12 +39,60 @@ interface Category {
 
 const SalesPage = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>("insurance");
+  const [salesFromDB, setSalesFromDB] = useState<Client[]>([]);
+  const [showModal, setShowModal] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const categories = data.categories as Category[];
-  const clients = data.clients as Client[];
+  const dummyClients = data.clients as Client[];
   const tasks = data.tasks as Task[];
 
-  const filteredClients = clients.filter(
+  /* ================= FETCH SALES FROM DJANGO ================= */
+  useEffect(() => {
+    const fetchSales = async () => {
+      try {
+        const res = await fetch("http://127.0.0.1:8000/api/sales/");
+        if (!res.ok) throw new Error("Failed to fetch sales");
+
+        const apiData = await res.json();
+
+        const mappedData: Client[] = apiData.map((sale: any) => ({
+          id: String(sale.id),
+          name: sale.client?.name ?? "Unknown Client",
+          date: sale.date,
+          spentTime:
+            sale.frequency === "M"
+              ? "Monthly"
+              : sale.frequency === "Q"
+              ? "Quarterly"
+              : sale.frequency === "Y"
+              ? "Yearly"
+              : "--",
+          assignee: {
+            name: sale.sales_rep?.name ?? "N/A",
+            avatar: sale.sales_rep?.avatar ?? "/avatar.png",
+          },
+          priority: "Medium", // not in model → safe default
+          status: "In Progress", // not in model → safe default
+          category: "insurance", // derived from product
+        }));
+
+        setSalesFromDB(mappedData);
+      } catch (err) {
+        console.error("Sales API error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSales();
+  }, []);
+
+  /* ================= DB DATA OR FALLBACK ================= */
+  const clientsToShow =
+    salesFromDB.length > 0 ? salesFromDB : dummyClients;
+
+  const filteredClients = clientsToShow.filter(
     (client) => client.category === selectedCategory
   );
 
@@ -90,37 +139,29 @@ const SalesPage = () => {
   return (
     <div className="min-h-screen bg-[#F4F9FD]">
       <Sidebar />
-    <Navbar />
+      <Navbar />
+
       <div className="flex-1 flex flex-col overflow-hidden ml-64 mt-16 p-6">
         <main className="flex-1 overflow-y-auto">
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-3xl font-bold text-[#00337C]">Sales</h1>
-            <button className="bg-[#2D8A4E] hover:bg-[#236b3d] transition-colors text-white px-4 py-2 rounded-lg flex items-center gap-2 cursor-pointer font-medium">
+            <button
+              onClick={() => setShowModal(true)}
+              className="bg-[#2D8A4E] hover:bg-[#236b3d] transition-colors text-white px-4 py-2 rounded-lg flex items-center gap-2 cursor-pointer font-medium"
+            >
               <span className="text-lg">+</span>
               Add Sales
             </button>
           </div>
 
           <div className="grid grid-cols-12 gap-6">
-            {/* Left Panel - Categories */}
+            {/* LEFT PANEL */}
             <div className="col-span-3">
               <div className="bg-white rounded-lg shadow-sm p-4">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="font-semibold text-gray-900">Current Sales</h2>
-                  <svg
-                    className="w-4 h-4 text-gray-500"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </div>
+                <h2 className="font-semibold text-gray-900 mb-4">
+                  Current Sales
+                </h2>
+
                 <div className="space-y-2">
                   {categories.map((category) => (
                     <div
@@ -138,46 +179,30 @@ const SalesPage = () => {
                       <p className="font-medium text-gray-900">
                         {category.name}
                       </p>
-                      {selectedCategory === category.id && (
-                        <button className="text-[#00337C] text-sm mt-2 flex items-center gap-1">
-                          View details
-                          <span>→</span>
-                        </button>
-                      )}
                     </div>
                   ))}
                 </div>
               </div>
             </div>
 
-            {/* Right Panel - Sales Overview */}
+            {/* RIGHT PANEL */}
             <div className="col-span-9">
               <div className="bg-white rounded-lg shadow-sm p-6">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-semibold text-gray-900">
-                    Sales Overview
-                  </h2>
-                  <button className="p-2 hover:bg-gray-100 rounded-lg transition">
-                    <svg
-                      className="w-5 h-5 text-gray-600"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
-                      />
-                    </svg>
-                  </button>
-                </div>
+                <h2 className="text-xl font-semibold text-gray-900 mb-6">
+                  Sales Overview
+                </h2>
 
-                <div className="bg-[#F4F9FD] rounded-lg p-4 mb-4">
+                <div className="bg-[#F4F9FD] rounded-lg p-4">
                   <h3 className="text-sm font-semibold text-gray-700 mb-4">
                     All Sales
                   </h3>
+
+                  {loading && (
+                    <p className="text-sm text-gray-500">
+                      Loading sales...
+                    </p>
+                  )}
+
                   <div className="space-y-3">
                     {filteredClients.map((client) => (
                       <div
@@ -185,41 +210,43 @@ const SalesPage = () => {
                         className="bg-white p-4 rounded-lg flex items-center justify-between hover:shadow-md transition"
                       >
                         <div className="flex-1">
-                          <p className="text-xs text-gray-500 mb-1">Name</p>
+                          <p className="text-xs text-gray-500 mb-1">
+                            Name
+                          </p>
                           <p className="font-medium text-gray-900">
                             {client.name}
                           </p>
                         </div>
-                        <div className="flex-1">
-                          <p className="text-xs text-gray-500 mb-1">Date</p>
-                          <p className="text-sm text-gray-700">{client.date}</p>
-                        </div>
+
                         <div className="flex-1">
                           <p className="text-xs text-gray-500 mb-1">
-                            Spent Time
+                            Date
+                          </p>
+                          <p className="text-sm text-gray-700">
+                            {client.date}
+                          </p>
+                        </div>
+
+                        <div className="flex-1">
+                          <p className="text-xs text-gray-500 mb-1">
+                            Frequency
                           </p>
                           <p className="text-sm text-gray-700">
                             {client.spentTime}
                           </p>
                         </div>
+
                         <div className="flex-1">
-                          <p className="text-xs text-gray-500 mb-1">Assignee</p>
+                          <p className="text-xs text-gray-500 mb-1">
+                            Assignee
+                          </p>
                           <img
                             src={client.assignee.avatar}
                             alt={client.assignee.name}
                             className="w-8 h-8 rounded-full"
                           />
                         </div>
-                        <div className="flex-1">
-                          <p className="text-xs text-gray-500 mb-1">Priority</p>
-                          <p
-                            className={`text-sm font-medium flex items-center gap-1 ${getPriorityColor(
-                              client.priority
-                            )}`}
-                          >
-                            {getPriorityIcon(client.priority)} {client.priority}
-                          </p>
-                        </div>
+
                         <div className="flex items-center gap-3">
                           <span
                             className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
@@ -228,51 +255,22 @@ const SalesPage = () => {
                           >
                             {client.status}
                           </span>
-                          <div className="w-10 h-10 rounded-full border-4 border-blue-500 border-t-transparent animate-spin-slow"></div>
                         </div>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                {/* Tasks Section */}
+                {/* TASKS (UNCHANGED) */}
                 <div className="space-y-3 mt-6">
                   {tasks.map((task) => (
                     <div
                       key={task.id}
-                      className="bg-white p-4 rounded-lg flex items-center justify-between border border-gray-200 hover:shadow-md transition"
+                      className="bg-white p-4 rounded-lg border border-gray-200"
                     >
-                      <div className="flex-1">
-                        <p className="text-xs text-gray-500 mb-1">Task Name</p>
-                        <p className="font-medium text-gray-900">{task.name}</p>
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-xs text-gray-500 mb-1">Estimate</p>
-                        <p className="text-sm text-gray-700">{task.estimate}</p>
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-xs text-gray-500 mb-1">Spent Time</p>
-                        <p className="text-sm text-gray-700">{task.spentTime}</p>
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-xs text-gray-500 mb-1">Assignee</p>
-                        <img
-                          src={task.assignee.avatar}
-                          alt={task.assignee.name}
-                          className="w-8 h-8 rounded-full"
-                        />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-xs text-gray-500 mb-1">Priority</p>
-                        <p
-                          className={`text-sm font-medium flex items-center gap-1 ${getPriorityColor(
-                            task.priority
-                          )}`}
-                        >
-                          {getPriorityIcon(task.priority)} {task.priority}
-                        </p>
-                      </div>
-                      <div className="w-10 h-10 rounded-full border-4 border-gray-300"></div>
+                      <p className="font-medium text-gray-900">
+                        {task.name}
+                      </p>
                     </div>
                   ))}
                 </div>
@@ -281,6 +279,11 @@ const SalesPage = () => {
           </div>
         </main>
       </div>
+
+      <AddSalesModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+      />
     </div>
   );
 };
