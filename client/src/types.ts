@@ -25,3 +25,28 @@ export interface ProductSale {
   priority: 'Low' | 'Medium' | 'High';
   representatives: string[];
 }
+
+type SalesRow = {
+  id: number;
+  client: string;
+  date: string;
+  contactNo: string;
+  salesRep: string;
+  salesRepId: number; // ADD THIS
+  product: 'Yes' | 'No';
+  company: string;
+  amount: string;
+  remark: string;
+};
+
+type InteractionRow = {
+  id: number;
+  client: string;
+  date: string;
+  contactNo: string;
+  summary: string;
+  callStatus: 'Yes' | 'No';
+  followUpDate: string;
+  followUpTime: string;
+  employeeId: number; // ADD THIS
+};

@@ -5,7 +5,7 @@ import Sidebar from '@/components/Sidebar';
 import Navbar from '@/components/Navbar';
 import data from '@/data/infoPortalData.json';
 import toast from 'react-hot-toast';
-
+import { Trash2, Edit, X } from 'lucide-react';
 import AddSalesModal from '@/components/AddSalesModal';
 import AddInteractionModal from '@/components/AddInteractionsModal';
 
@@ -49,6 +49,9 @@ export default function InfoPortalPage() {
   });
   const [showFilters, setShowFilters] = useState(false);
 
+  const [editingRow, setEditingRow] = useState<SalesRow | InteractionRow | null>(null);
+const [showEditModal, setShowEditModal] = useState(false);
+
   const filteredSales = sales.filter(s =>{
   const matchesSearch = s.client.toLowerCase().includes(search.toLowerCase());
   const matchesDateFrom = !filters.dateFrom || s.date >= filters.dateFrom;
@@ -83,6 +86,7 @@ const filteredInteractions = interactions.filter(i => {
               date: s.date,
               contactNo: s.client.contact_number,
               salesRep: s.sales_rep.name,
+              salesRepId: s.sales_rep.id, // ADD THIS
               product: 'Yes',
               company: s.company,
               amount: s.amount,
@@ -106,6 +110,7 @@ const filteredInteractions = interactions.filter(i => {
               callStatus: 'Yes',
               followUpDate: i.next_follow_up,
               followUpTime: '10:00',
+              employeeId: i.employee.id, // ADD THIS
             }))
           );
         }
@@ -163,6 +168,50 @@ const filteredInteractions = interactions.filter(i => {
       toast.error('Failed to add');
     }
   };
+
+  /* ================= EDIT ================= */
+
+const handleEdit = async (payload: any) => {
+  if (!editingRow) return;
+
+  const url =
+    activeTab === 'sales'
+      ? `http://127.0.0.1:8000/api/sales/${editingRow.id}/update/`
+      : `http://127.0.0.1:8000/api/interactions/${editingRow.id}/update/`;
+
+  const res = await fetch(url, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  if (res.ok) {
+    toast.success('Updated successfully');
+    setShowEditModal(false);
+    setEditingRow(null);
+    window.location.reload();
+  } else {
+    toast.error('Failed to update');
+  }
+};
+
+const openEditModal = (row: SalesRow | InteractionRow) => {
+  if (activeTab === 'sales') {
+    const salesRow = row as SalesRow;
+    // Transform the display data back to form data structure
+    setEditingRow({
+      ...salesRow,
+      // We need to fetch employeeId - for now using a placeholder
+      // You'll need to store employeeId in the row or fetch it
+    });
+  } else {
+    const interactionRow = row as InteractionRow;
+    setEditingRow({
+      ...interactionRow,
+    });
+  }
+  setShowEditModal(true);
+};
 
   const handleDelete = async (id: number) => {
     const url =
@@ -392,8 +441,7 @@ const resetFilters = () => {
           <th className="py-3 px-4 text-center font-semibold text-gray-600">Company</th>
           <th className="py-3 px-4 text-right font-semibold text-gray-600">Amount</th>
           <th className="py-3 px-4 text-left font-semibold text-gray-600">Remark</th>
-          <th className="py-3 px-4 text-center font-semibold text-gray-600">Actions</th>
-        </tr>
+<th className="py-3 px-4 text-center font-semibold text-gray-600">Actions</th>        </tr>
       </thead>
 
       <tbody>
@@ -415,15 +463,24 @@ const resetFilters = () => {
             <td className="py-3 px-4 text-center">{row.company}</td>
             <td className="py-3 px-4 text-right font-semibold">{row.amount}</td>
             <td className="py-3 px-4 text-left">{row.remark}</td>
-            <td className="py-3 px-4 text-center">
-              <button
-                onClick={() => handleDelete(row.id)}
-                className="text-red-600 hover:text-red-800 text-xs"
-              >
-                Delete
-              </button>
-            </td>
-          </tr>
+<td className="py-3 px-4">
+  <div className="flex items-center justify-center gap-2">
+    <button
+      onClick={() => openEditModal(row)}
+      className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+      title="Edit"
+    >
+      <Edit size={16} />
+    </button>
+    <button
+      onClick={() => handleDelete(row.id)}
+      className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
+      title="Delete"
+    >
+      <Trash2 size={16} />
+    </button>
+  </div>
+</td>          </tr>
         ))}
       </tbody>
     </table>
@@ -448,59 +505,108 @@ const resetFilters = () => {
           <th className="py-3 px-4 text-center font-semibold text-gray-600">Call Status</th>
           <th className="py-3 px-4 text-center font-semibold text-gray-600">Follow-up Date</th>
           <th className="py-3 px-4 text-center font-semibold text-gray-600">Follow-up Time</th>
-          <th className="py-3 px-4 text-center font-semibold text-gray-600">Actions</th>
-        </tr>
+          <th className="py-3 px-4 text-center font-semibold text-gray-600">Actions</th>        </tr>
       </thead>
 
-      <tbody>
-        {filteredInteractions.map(row => (
-          <tr key={row.id} className="border-b last:border-none hover:bg-gray-50">
-            <td className="py-3 px-4">
-              <input
-                type="checkbox"
-                checked={selectedRows.includes(row.id)}
-                onChange={() => toggleRowSelection(row.id)}
-                className="rounded"
-              />
-            </td>
-            <td className="py-3 px-4 font-medium">{row.client}</td>
-            <td className="py-3 px-4 text-center">{row.date}</td>
-            <td className="py-3 px-4 text-center">{row.contactNo}</td>
-            <td className="py-3 px-4 text-left">{row.summary}</td>
-            <td className="py-3 px-4 text-center">{row.callStatus}</td>
-            <td className="py-3 px-4 text-center">{row.followUpDate}</td>
-            <td className="py-3 px-4 text-center">{row.followUpTime}</td>
-            <td className="py-3 px-4 text-center">
-              <button
-                onClick={() => handleDelete(row.id)}
-                className="text-red-600 hover:text-red-800 text-xs"
-              >
-                Delete
-              </button>
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  </div>
-)}          </div>
+          <tbody>
+            {filteredInteractions.map(row => (
+              <tr key={row.id} className="border-b last:border-none hover:bg-gray-50">
+                <td className="py-3 px-4">
+                  <input
+                    type="checkbox"
+                    checked={selectedRows.includes(row.id)}
+                    onChange={() => toggleRowSelection(row.id)}
+                    className="rounded"
+                  />
+                </td>
+                <td className="py-3 px-4 font-medium">{row.client}</td>
+                <td className="py-3 px-4 text-center">{row.date}</td>
+                <td className="py-3 px-4 text-center">{row.contactNo}</td>
+                <td className="py-3 px-4 text-left">{row.summary}</td>
+                <td className="py-3 px-4 text-center">{row.callStatus}</td>
+                <td className="py-3 px-4 text-center">{row.followUpDate}</td>
+                <td className="py-3 px-4 text-center">{row.followUpTime}</td>
+                <td className="py-3 px-4">
+                  <div className="flex items-center justify-center gap-2">
+                    <button
+                      onClick={() => openEditModal(row)}
+                      className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                      title="Edit"
+                    >
+                      <Edit size={16} />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(row.id)}
+                      className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
+                      title="Delete"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </td>          
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+  )}         
+ </div>
         </div>
       </div>
 
       {/* ✅ MODALS — THIS IS THE CORRECT PLACE */}
       {activeTab === 'sales' ? (
-        <AddSalesModal
-          isOpen={showModal}
-          onClose={() => setShowModal(false)}
-          onSave={handleAdd}
-        />
-      ) : (
-        <AddInteractionModal
-          isOpen={showModal}
-          onClose={() => setShowModal(false)}
-          onSave={handleAdd}
-        />
-      )}
+<>
+    <AddSalesModal
+      isOpen={showModal}
+      onClose={() => setShowModal(false)}
+      onSave={handleAdd}
+    />
+    {editingRow && (
+      <AddSalesModal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setEditingRow(null);
+        }}
+        onSave={handleEdit}
+        initialData={{
+          client: (editingRow as SalesRow).client,
+          date: (editingRow as SalesRow).date,
+          contactNo: (editingRow as SalesRow).contactNo,
+          employeeId: (editingRow as SalesRow).salesRepId,
+          company: (editingRow as SalesRow).company,
+          amount: (editingRow as SalesRow).amount,
+          remark: (editingRow as SalesRow).remark,
+        }}
+      />
+    )}
+  </>      ) : (
+<>
+    <AddInteractionModal
+      isOpen={showModal}
+      onClose={() => setShowModal(false)}
+      onSave={handleAdd}
+    />
+    {editingRow && (
+      <AddInteractionModal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setEditingRow(null);
+        }}
+        onSave={handleEdit}
+        initialData={{
+          client: (editingRow as InteractionRow).client,
+          date: (editingRow as InteractionRow).date,
+          contactNo: (editingRow as InteractionRow).contactNo,
+          employeeId: (editingRow as InteractionRow).employeeId,
+          summary: (editingRow as InteractionRow).summary,
+          followUpDate: (editingRow as InteractionRow).followUpDate,
+        }}
+      />
+    )}
+  </>      )}
     </div>
   );
 }

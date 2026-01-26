@@ -333,6 +333,73 @@ def create_interaction(request):
 
     return Response({'status': 'created'}, status=201)
 
+
+# Update Sale
+@api_view(['PUT'])
+def update_sale(request, pk):
+    try:
+        sale = Sale.objects.get(id=pk)
+    except Sale.DoesNotExist:
+        return Response({'error': 'Sale not found'}, status=404)
+    
+    data = request.data
+    
+    # Update client if changed
+    if 'client' in data and 'contactNo' in data:
+        client, _ = Client.objects.get_or_create(
+            name=data['client'],
+            contact_number=data['contactNo']
+        )
+        sale.client = client
+    
+    # Update other fields
+    if 'employeeId' in data:
+        sale.sales_rep = Employee.objects.get(id=data['employeeId'])
+    if 'date' in data:
+        sale.date = data['date']
+    if 'company' in data:
+        sale.company = data['company']
+    if 'amount' in data:
+        sale.amount = data['amount']
+    if 'remark' in data:
+        sale.remarks = data['remark']
+    
+    sale.save()
+    return Response({'status': 'updated'}, status=200)
+
+
+# Update Interaction
+@api_view(['PUT'])
+def update_interaction(request, pk):
+    try:
+        interaction = Interaction.objects.get(id=pk)
+    except Interaction.DoesNotExist:
+        return Response({'error': 'Interaction not found'}, status=404)
+    
+    data = request.data
+    
+    # Update client if changed
+    if 'client' in data and 'contactNo' in data:
+        client, _ = Client.objects.get_or_create(
+            name=data['client'],
+            contact_number=data['contactNo']
+        )
+        interaction.client = client
+    
+    # Update other fields
+    if 'employeeId' in data:
+        interaction.employee = Employee.objects.get(id=data['employeeId'])
+    if 'date' in data:
+        interaction.date = data['date']
+    if 'summary' in data:
+        interaction.discussion_notes = data['summary']
+    if 'followUpDate' in data:
+        interaction.next_follow_up = data['followUpDate']
+    
+    interaction.save()
+    return Response({'status': 'updated'}, status=200)
+
+
 @api_view(['DELETE'])
 def delete_sale(request, pk):
     Sale.objects.filter(id=pk).delete()

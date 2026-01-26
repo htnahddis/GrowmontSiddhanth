@@ -1,23 +1,49 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
   onSave: (payload: any) => void;
+  initialData?: any;
 }
 
-export default function AddInteractionModal({ isOpen, onClose, onSave }: Props) {
-  const [form, setForm] = useState({
-    client: '',
-    contactNo: '',
-    date: '',
-    employeeId: '',
-    summary: '',
-    followUpDate: '',
-  });
+export default function AddInteractionModal({ isOpen, onClose, onSave, initialData }: Props) {
+const [form, setForm] = useState({
+  client: '',
+  date: '',
+  contactNo: '',
+  employeeId: '',
+  summary: '',
+  followUpDate: '',
+});
 
+// Reset form when modal opens/closes or initialData changes
+useEffect(() => {
+  if (isOpen) {
+    if (initialData) {
+      setForm({
+        client: initialData.client || '',
+        date: initialData.date || '',
+        contactNo: initialData.contactNo || '',
+        employeeId: initialData.employeeId?.toString() || '',
+        summary: initialData.summary || '',
+        followUpDate: initialData.followUpDate || '',
+      });
+    } else {
+      // Reset to empty if no initialData (i.e., Add mode)
+      setForm({
+        client: '',
+        date: '',
+        contactNo: '',
+        employeeId: '',
+        summary: '',
+        followUpDate: '',
+      });
+    }
+  }
+}, [isOpen, initialData]);
   if (!isOpen) return null;
 
   const handleChange = (e: any) =>
@@ -34,7 +60,7 @@ export default function AddInteractionModal({ isOpen, onClose, onSave }: Props) 
         {/* Header */}
         <div className="mb-6 flex justify-between items-center">
           <h2 className="text-lg font-semibold text-blue-700">
-            Add Interaction
+  {initialData ? 'Edit Interaction' : 'Add New Interaction'}
           </h2>
           <button onClick={onClose} className="text-xl">×</button>
         </div>
@@ -42,6 +68,7 @@ export default function AddInteractionModal({ isOpen, onClose, onSave }: Props) 
         <div className="space-y-4">
           <input
             name="client"
+            value={form.client}
             placeholder="Client Name"
             className="w-full rounded-lg border px-4 py-2"
             onChange={handleChange}
@@ -49,6 +76,7 @@ export default function AddInteractionModal({ isOpen, onClose, onSave }: Props) 
 
           <input
             name="contactNo"
+            value={form.contactNo}
             placeholder="Contact Number"
             className="w-full rounded-lg border px-4 py-2"
             onChange={handleChange}
@@ -57,12 +85,14 @@ export default function AddInteractionModal({ isOpen, onClose, onSave }: Props) 
           <input
             type="date"
             name="date"
+            value={form.date}
             className="w-full rounded-lg border px-4 py-2"
             onChange={handleChange}
           />
 
           <input
             name="employeeId"
+            value={form.employeeId}
             placeholder="Employee ID"
             className="w-full rounded-lg border px-4 py-2"
             onChange={handleChange}
@@ -70,6 +100,7 @@ export default function AddInteractionModal({ isOpen, onClose, onSave }: Props) 
 
           <textarea
             name="summary"
+            value={form.summary}
             placeholder="Discussion Summary"
             className="w-full rounded-lg border px-4 py-2"
             rows={3}
@@ -79,6 +110,7 @@ export default function AddInteractionModal({ isOpen, onClose, onSave }: Props) 
           <input
             type="date"
             name="followUpDate"
+            value={form.followUpDate}
             className="w-full rounded-lg border px-4 py-2"
             onChange={handleChange}
           />
