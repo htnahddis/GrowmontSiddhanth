@@ -13,7 +13,7 @@ export default function AddSalesModal({ isOpen, onClose, onSave }: Props) {
     client: '',
     contactNo: '',
     date: '',
-    employeeId: '',
+  
     company: '',
     amount: '',
     remark: '',
@@ -25,20 +25,33 @@ export default function AddSalesModal({ isOpen, onClose, onSave }: Props) {
     setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = () => {
-    onSave(form);
+    // ✅ PERFECT payload bridge to Sales page
+    const payload = {
+      client: form.client,          // "Sidhdanth" (string)
+       // "1" (string)
+      contactNo: form.contactNo,
+      date: form.date,
+      company: form.company,
+      amount: form.amount,
+      remark: form.remark
+    };
+
+    console.log('Modal sending to Sales page:', payload);  // DEBUG
+
+    onSave(payload);
+    onClose();
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#1C7947]/30">
       <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-
         {/* Header */}
         <div className="mb-6 flex justify-between items-center">
           <h2 className="text-lg font-semibold text-blue-700">Add Sale</h2>
           <button onClick={onClose} className="text-xl">×</button>
         </div>
-
-        <div className="space-y-4">
+<div>
+        
           <input
             name="client"
             placeholder="Client Name"
@@ -61,13 +74,6 @@ export default function AddSalesModal({ isOpen, onClose, onSave }: Props) {
           />
 
           <input
-            name="employeeId"
-            placeholder="Sales Rep ID"
-            className="w-full rounded-lg border px-4 py-2"
-            onChange={handleChange}
-          />
-
-          <input
             name="company"
             placeholder="Company"
             className="w-full rounded-lg border px-4 py-2"
@@ -77,6 +83,7 @@ export default function AddSalesModal({ isOpen, onClose, onSave }: Props) {
           <input
             name="amount"
             placeholder="Amount"
+            type="number"
             className="w-full rounded-lg border px-4 py-2"
             onChange={handleChange}
           />
@@ -95,7 +102,7 @@ export default function AddSalesModal({ isOpen, onClose, onSave }: Props) {
           >
             Save Sale
           </button>
-        </div>
+      </div>
       </div>
     </div>
   );

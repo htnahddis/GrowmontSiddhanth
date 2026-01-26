@@ -60,14 +60,15 @@ const SalesPage = () => {
           id: String(sale.id),
           name: sale.client?.name ?? "Unknown Client",
           date: sale.date,
-          spentTime:
-            sale.frequency === "M"
-              ? "Monthly"
-              : sale.frequency === "Q"
-              ? "Quarterly"
-              : sale.frequency === "Y"
-              ? "Yearly"
-              : "--",
+         spentTime:
+  sale.frequency === "M"
+    ? "Monthly"
+    : sale.frequency === "Q"
+    ? "Quarterly"
+    : sale.frequency === "Y"
+    ? "Yearly"
+    : "--",
+
           assignee: {
             name: sale.sales_rep?.name ?? "N/A",
             avatar: sale.sales_rep?.avatar ?? "/avatar.png",
@@ -87,6 +88,80 @@ const SalesPage = () => {
 
     fetchSales();
   }, []);
+
+  const handleSaveSale = async (formData: any) => {
+  try {
+    const payload = {
+      // Backend creates client by name (Fix #1 from previous)
+      client_name: formData.client,     // "Sidhdanth"
+      contactNo: formData.contactNo,
+      
+      // Sale model required fields
+      sales_rep: (() => {
+  const repId = parseInt(formData.employeeId);
+  return isNaN(repId) ? 1 : repId;  // fallback to ID 1 if invalid
+})(),
+
+      date: formData.date,
+      product: "HI",  // Health Insurance
+      company: formData.company,
+      scheme: formData.company + " Scheme",  // auto-generate
+      amount: parseFloat(formData.amount) || 0,
+      frequency: "M",  // Monthly
+      remarks: formData.remark || ""
+    };
+
+    console.log('Final payload to Django:', payload);
+
+    const res = await fetch("http://127.0.0.1:8000/api/sales/", {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+   if (!res.ok) {
+  const errorText = await res.text();
+  
+  if (errorText.includes('sales_rep')) {
+    alert('Employee ID not found. Use ID 1 or check /admin/employees');
+  } else if (errorText.includes('client')) {
+    alert('Client issue. Check client name');
+  } else {
+    alert('Server error: ' + errorText);
+  }
+  return;
+}
+
+
+    const newSale = await res.json();
+    
+    // Your exact mapping logic
+    const mappedSale: Client = {
+      id: String(newSale.id),
+      name: newSale.client.name,  // Now "Sidhdanth"!
+      date: newSale.date,
+      spentTime: newSale.frequency === "M" ? "Monthly" : 
+                newSale.frequency === "Q" ? "Quarterly" : "Yearly",
+      assignee: {
+        name: newSale.sales_rep.name,
+        avatar: newSale.sales_rep.avatar || "/avatar.png",
+      },
+      priority: "Medium",
+      status: "In Progress",
+      category: newSale.product === "HI" ? "insurance" : "mutualfunds",
+    };
+
+    setSalesFromDB(prev => [mappedSale, ...prev]);
+    
+  } catch (error: any) {
+    console.error('Error:', error.message);
+    alert('Failed: ' + error.message);
+  }
+};
+
+
+      
+
 
   /* ================= DB DATA OR FALLBACK ================= */
   const clientsToShow =
@@ -282,8 +357,8 @@ const SalesPage = () => {
 
       <AddSalesModal
         isOpen={showModal}
-        onClose={() => setShowModal(false)}
-      />
+        onClose={() => setShowModal(false)} 
+         onSave={handleSaveSale}     />
     </div>
   );
 };

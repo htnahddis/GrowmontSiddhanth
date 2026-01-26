@@ -12,13 +12,14 @@ from rest_framework.parsers import MultiPartParser
 from django.http import HttpResponse
 
 from .models import Employee, Sale, Interaction, Client
+
 from .serializers import (
     EmployeeSerializer,
     SaleSerializer,
+    SaleCreateSerializer,
     InteractionSerializer,
     ClientSerializer,
 )
-
 
 # Health Check
 @api_view(["GET"])
@@ -125,11 +126,36 @@ def employee_sales(request, id):
 # --------------------
 # Existing APIs
 # --------------------
-@api_view(['GET'])
+# @api_view(['GET'])
+# def sales_list(request):
+#     sales = Sale.objects.all()
+#     serializer = SaleSerializer(sales, many=True)
+#     return Response(serializer.data)
+@api_view(['GET', 'POST'])
 def sales_list(request):
-    sales = Sale.objects.all()
-    serializer = SaleSerializer(sales, many=True)
-    return Response(serializer.data)
+   if request.method == 'POST':
+    data = request.data
+    
+    # CREATE CLIENT BY NAME
+    client_name = data.pop('client_name', '')
+    contact_no = data.pop('contactNo', '')
+    
+    if client_name:
+        client, created = Client.objects.get_or_create(
+            name=client_name,
+            defaults={'contact_number': contact_no}
+        )
+        data['client'] = client.id
+    else:
+        return Response({'error': 'client_name required'}, status=400)
+    data['sales_rep'] = Employee.objects.first().id
+    serializer = SaleCreateSerializer(data=data)
+    if serializer.is_valid():
+        sale = serializer.save()
+        read_serializer = SaleSerializer(sale)
+        return Response(read_serializer.data, status=201)
+    return Response(serializer.errors, status=400)
+
 
 
 @api_view(['GET'])

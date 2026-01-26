@@ -29,9 +29,18 @@ class ClientSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class SaleCreateSerializer(serializers.ModelSerializer):
+    client = serializers.PrimaryKeyRelatedField(queryset=Client.objects.all())
+    sales_rep = serializers.PrimaryKeyRelatedField(queryset=Employee.objects.all())
+
+    class Meta:
+        model = Sale
+        fields = '__all__'
+
+
 class SaleSerializer(serializers.ModelSerializer):
-    client = ClientSerializer()
-    sales_rep = EmployeeSerializer()
+    client = ClientSerializer(read_only=True)
+    sales_rep = EmployeeSerializer(read_only=True)
 
     class Meta:
         model = Sale
