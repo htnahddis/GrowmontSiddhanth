@@ -190,6 +190,69 @@ def export_sales_excel(request):
     wb.save(response)
     return response
 
+
+# Filtered Export Sales
+@api_view(['POST'])
+def export_sales_excel_filtered(request):
+    data = request.data.get('data', [])
+
+    print("EXPORT SALES HIT", request.data)
+    
+    if not data:
+        return Response({'error': 'No data provided'}, status=400)
+    
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.append(['Client', 'Date', 'Contact', 'Sales Rep', 'Company', 'Amount', 'Remarks'])
+
+    for row in data:
+        ws.append([
+            row.get('client', ''),
+            row.get('date', ''),
+            row.get('contactNo', ''),
+            row.get('salesRep', ''),
+            row.get('company', ''),
+            row.get('amount', ''),
+            row.get('remark', '')
+        ])
+
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename="filtered_sales.xlsx"'
+    wb.save(response)
+    return response
+
+
+# Filtered Export Interactions
+@api_view(['POST'])
+def export_interactions_excel_filtered(request):
+    data = request.data.get('data', [])
+    
+    if not data:
+        return Response({'error': 'No data provided'}, status=400)
+    
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.append(['Client', 'Date', 'Contact', 'Summary', 'Follow Up Date'])
+
+    for row in data:
+        ws.append([
+            row.get('client', ''),
+            row.get('date', ''),
+            row.get('contactNo', ''),
+            row.get('summary', ''),
+            row.get('followUpDate', '')
+        ])
+
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename="filtered_interactions.xlsx"'
+    wb.save(response)
+    return response
+
+
 # export interactions 
 @api_view(['GET'])
 def export_interactions_excel(request):

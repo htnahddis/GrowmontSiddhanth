@@ -117,16 +117,83 @@ const filteredInteractions = interactions.filter(i => {
       });
   }, []);
 
-  /* ================= EXPORT ================= */
+/* ================= EXPORT ================= */
 
-  const handleExport = () => {
-    const url =
-      activeTab === 'sales'
-        ? 'http://127.0.0.1:8000/api/export/sales/'
-        : 'http://127.0.0.1:8000/api/export/interactions/';
+const handleExport = async () => {
+  // Get the filtered data based on current tab
+  const dataToExport = activeTab === 'sales' ? filteredSales : filteredInteractions;
+  
+  if (dataToExport.length === 0) {
+    toast.error('No data to export');
+    return;
+  }
 
-    window.open(url, '_blank');
+  // Prepare the data payload
+  const exportPayload = {
+    data: dataToExport.map(row => {
+      if (activeTab === 'sales') {
+        const salesRow = row as SalesRow;
+        return {
+          client: salesRow.client,
+          date: salesRow.date,
+          contactNo: salesRow.contactNo,
+          salesRep: salesRow.salesRep,
+          company: salesRow.company,
+          amount: salesRow.amount,
+          remark: salesRow.remark,
+        };
+      } else {
+        const interactionRow = row as InteractionRow;
+        return {
+          client: interactionRow.client,
+          date: interactionRow.date,
+          contactNo: interactionRow.contactNo,
+          summary: interactionRow.summary,
+          followUpDate: interactionRow.followUpDate,
+        };
+      }
+    }),
   };
+
+  const url =
+    activeTab === 'sales'
+      ? 'http://127.0.0.1:8000/api/export/sales/filtered/'
+      : 'http://127.0.0.1:8000/api/export/interactions/filtered/';
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(exportPayload),
+    });
+    if (!response.ok) {
+      const text = await response.text();
+      console.error(text);
+      throw new Error('Export failed');
+    }
+    if (response.ok) {
+      // Create a blob from the response
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = activeTab === 'sales' ? 'filtered_sales.xlsx' : 'filtered_interactions.xlsx';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+      
+      toast.success(`Exported ${dataToExport.length} ${activeTab === 'sales' ? 'sales' : 'interactions'}`);
+    } else {
+      toast.error('Export failed');
+    }
+  } catch (error) {
+    console.error('Export error:', error);
+    toast.error('Export failed');
+  }
+};
 
   /* ================= IMPORT ================= */
 
@@ -343,7 +410,7 @@ const resetFilters = () => {
                   onClick={handleExport}
                   className="px-4 py-2 text-sm border rounded-lg hover:bg-gray-50"
                 >
-                  Export
+                Export ({activeTab === 'sales' ? filteredSales.length : filteredInteractions.length})
                 </button>
 
                 <button
