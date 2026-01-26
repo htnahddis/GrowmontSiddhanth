@@ -6,7 +6,6 @@ import Navbar from '@/components/Navbar';
 import data from '@/data/infoPortalData.json';
 import toast from 'react-hot-toast';
 
-/* ✅ ADD THESE IMPORTS */
 import AddSalesModal from '@/components/AddSalesModal';
 import AddInteractionModal from '@/components/AddInteractionsModal';
 
@@ -36,20 +35,39 @@ type InteractionRow = {
 export default function InfoPortalPage() {
   const [showModal, setShowModal] = useState(false);
   const [search, setSearch] = useState('');
-  const [activeTab, setActiveTab] =
-    useState<'sales' | 'interactions'>('interactions');
+  const [activeTab, setActiveTab] =useState<'sales' | 'interactions'>('interactions');
 
   const [sales, setSales] = useState<SalesRow[]>(data.sales);
-  const [interactions, setInteractions] =
-    useState<InteractionRow[]>(data.interactions);
+  const [interactions, setInteractions] =useState<InteractionRow[]>(data.interactions);
+  const [selectedRows, setSelectedRows] = useState<number[]>([]);
+  const [filters, setFilters] = useState({
+    dateFrom: '',
+    dateTo: '',
+    client: '',
+    salesRep: '', // for sales only
+    product: '', // for sales only
+  });
+  const [showFilters, setShowFilters] = useState(false);
 
-  const filteredSales = sales.filter(s =>
-    s.client.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredSales = sales.filter(s =>{
+  const matchesSearch = s.client.toLowerCase().includes(search.toLowerCase());
+  const matchesDateFrom = !filters.dateFrom || s.date >= filters.dateFrom;
+  const matchesDateTo = !filters.dateTo || s.date <= filters.dateTo;
+  const matchesClient = !filters.client || s.client.toLowerCase().includes(filters.client.toLowerCase());
+  const matchesSalesRep = !filters.salesRep || s.salesRep.toLowerCase().includes(filters.salesRep.toLowerCase());
+  const matchesProduct = !filters.product || s.product === filters.product;
+  
+  return matchesSearch && matchesDateFrom && matchesDateTo && matchesClient && matchesSalesRep && matchesProduct;
+});
 
-  const filteredInteractions = interactions.filter(i =>
-    i.client.toLowerCase().includes(search.toLowerCase())
-  );
+const filteredInteractions = interactions.filter(i => {
+  const matchesSearch = i.client.toLowerCase().includes(search.toLowerCase());
+  const matchesDateFrom = !filters.dateFrom || i.date >= filters.dateFrom;
+  const matchesDateTo = !filters.dateTo || i.date <= filters.dateTo;
+  const matchesClient = !filters.client || i.client.toLowerCase().includes(filters.client.toLowerCase());
+  
+  return matchesSearch && matchesDateFrom && matchesDateTo && matchesClient;
+});
 
   /* ================= FETCH FROM DB ================= */
 
@@ -163,6 +181,48 @@ export default function InfoPortalPage() {
     }
   };
 
+  const handleBulkDelete= async()=>{
+    if (selectedRows.length === 0) {
+    toast.error('No rows selected');
+    return;
+  }
+
+  if (!confirm(`Delete ${selectedRows.length} item(s)?`)) return;
+
+  const promises = selectedRows.map(id => handleDelete(id));
+  await Promise.all(promises);
+  setSelectedRows([]);
+};
+
+// Add toggle function for row selection
+const toggleRowSelection = (id: number) => {
+  setSelectedRows(prev =>
+    prev.includes(id) ? prev.filter(rowId => rowId !== id) : [...prev, id]
+  );
+};
+
+// Add select all function
+const toggleSelectAll = () => {
+  const currentData = activeTab === 'sales' ? filteredSales : filteredInteractions;
+  if (selectedRows.length === currentData.length) {
+    setSelectedRows([]);
+  } else {
+    setSelectedRows(currentData.map(row => row.id));
+  }
+};
+
+// Reset filters function
+const resetFilters = () => {
+  setFilters({
+    dateFrom: '',
+    dateTo: '',
+    client: '',
+    salesRep: '',
+    product: '',
+  });
+};
+
+
   return (
     <div className=" bg-[#F6FAFD] min-h-screen">
       <Sidebar />
@@ -208,14 +268,19 @@ export default function InfoPortalPage() {
               </div>
 
               <div className="flex gap-3">
-                <button className="px-4 py-2 text-sm border rounded-lg">
-                  Delete
+                <button 
+                  onClick={handleBulkDelete} disabled={selectedRows.length===0}
+                  className={`px-4 py-2 text-sm border rounded-lg ${selectedRows.length>0 ? 'hover:bg-red-50 hover:border-red-300' : 'opacity-50 cursor-not-allowed'}`}>
+                  Delete {selectedRows.length>0 && `(${selectedRows.length})`}
                 </button>
-                <button className="px-4 py-2 text-sm border rounded-lg">
+
+                <button 
+                  onClick={()=> setShowFilters(!showFilters)}
+                  className={`px-4 py-2 text-sm border rounded-lg ${showFilters? 'bg-gray-100' : ''}`}>
                   Filters
                 </button>
 
-                <label className="px-4 py-2 text-sm border rounded-lg cursor-pointer">
+                <label className="px-4 py-2 text-sm border rounded-lg cursor-pointer hover:bg-gray-50">
                   Import
                   <input
                     type="file"
@@ -227,83 +292,198 @@ export default function InfoPortalPage() {
 
                 <button
                   onClick={handleExport}
-                  className="px-4 py-2 text-sm border rounded-lg"
+                  className="px-4 py-2 text-sm border rounded-lg hover:bg-gray-50"
                 >
                   Export
                 </button>
 
                 <button
                   onClick={() => setShowModal(true)}
-                  className="px-4 py-2 text-sm cursor-pointer bg-[#2D8A4E] text-white rounded-lg"
+                  className="px-4 py-2 text-sm cursor-pointer bg-[#2D8A4E] text-white rounded-lg hover:bg-[#246b3d]"
                 >
                   + Add new
                 </button>
               </div>
             </div>
 
+            {/* FILTERS PANEL */}
+{showFilters && (
+  <div className="my-4 p-4 bg-white rounded-lg border">
+    <div className="grid grid-cols-4 gap-4">
+      <div>
+        <label className="block text-sm font-medium mb-1">Date From</label>
+        <input
+          type="date"
+          value={filters.dateFrom}
+          onChange={(e) => setFilters({ ...filters, dateFrom: e.target.value })}
+          className="w-full px-3 py-2 border rounded-lg text-sm"
+        />
+      </div>
+      
+      <div>
+        <label className="block text-sm font-medium mb-1">Date To</label>
+        <input
+          type="date"
+          value={filters.dateTo}
+          onChange={(e) => setFilters({ ...filters, dateTo: e.target.value })}
+          className="w-full px-3 py-2 border rounded-lg text-sm"
+        />
+      </div>
+      
+      <div>
+        <label className="block text-sm font-medium mb-1">Client Name</label>
+        <input
+          type="text"
+          value={filters.client}
+          onChange={(e) => setFilters({ ...filters, client: e.target.value })}
+          placeholder="Search client..."
+          className="w-full px-3 py-2 border rounded-lg text-sm"
+        />
+      </div>
+      
+      {activeTab === 'sales' && (
+        <div>
+          <label className="block text-sm font-medium mb-1">Sales Rep</label>
+          <input
+            type="text"
+            value={filters.salesRep}
+            onChange={(e) => setFilters({ ...filters, salesRep: e.target.value })}
+            placeholder="Search sales rep..."
+            className="w-full px-3 py-2 border rounded-lg text-sm"
+          />
+        </div>
+      )}
+    </div>
+    
+    <div className="mt-3 flex gap-2">
+      <button
+        onClick={resetFilters}
+        className="px-4 py-2 text-sm bg-gray-200 rounded-lg hover:bg-gray-300"
+      >
+        Reset Filters
+      </button>
+      <span className="text-sm text-gray-600 py-2">
+        Showing {activeTab === 'sales' ? filteredSales.length : filteredInteractions.length} results
+      </span>
+    </div>
+  </div>
+)}
+
+
             {/* TABLES */}
-            {activeTab === 'sales' ? (
-  <table className="w-full text-sm">
-    <thead className="border-b text-gray-500">
-      <tr>
-        <th className="py-3 text-left">Client</th>
-        <th>Date</th>
-        <th>Contact No</th>
-        <th>Sales Rep</th>
-        <th>Product</th>
-        <th>Company</th>
-        <th>Amount</th>
-        <th>Remark</th>
-      </tr>
-    </thead>
-
-    <tbody>
-      {sales.map(row => (
-        <tr key={row.id} className="border-b last:border-none">
-          <td className="py-3 font-medium">{row.client}</td>
-          <td>{row.date}</td>
-          <td>{row.contactNo}</td>
-          <td>{row.salesRep}</td>
-          <td>{row.product}</td>
-          <td>{row.company}</td>
-          <td>{row.amount}</td>
-          <td>{row.remark}</td>
+{activeTab === 'sales' ? (
+  <div className="overflow-x-auto">
+    <table className="w-full text-sm">
+      <thead className="bg-gray-50 border-b">
+        <tr>
+          <th className="py-3 px-4 text-left">
+            <input
+              type="checkbox"
+              checked={selectedRows.length === filteredSales.length && filteredSales.length > 0}
+              onChange={toggleSelectAll}
+              className="rounded"
+            />
+          </th>
+          <th className="py-3 px-4 text-left font-semibold text-gray-600">Client</th>
+          <th className="py-3 px-4 text-center font-semibold text-gray-600">Date</th>
+          <th className="py-3 px-4 text-center font-semibold text-gray-600">Contact No</th>
+          <th className="py-3 px-4 text-center font-semibold text-gray-600">Sales Rep</th>
+          <th className="py-3 px-4 text-center font-semibold text-gray-600">Product</th>
+          <th className="py-3 px-4 text-center font-semibold text-gray-600">Company</th>
+          <th className="py-3 px-4 text-right font-semibold text-gray-600">Amount</th>
+          <th className="py-3 px-4 text-left font-semibold text-gray-600">Remark</th>
+          <th className="py-3 px-4 text-center font-semibold text-gray-600">Actions</th>
         </tr>
-      ))}
-    </tbody>
-  </table>
+      </thead>
+
+      <tbody>
+        {filteredSales.map(row => (
+          <tr key={row.id} className="border-b last:border-none hover:bg-gray-50">
+            <td className="py-3 px-4">
+              <input
+                type="checkbox"
+                checked={selectedRows.includes(row.id)}
+                onChange={() => toggleRowSelection(row.id)}
+                className="rounded"
+              />
+            </td>
+            <td className="py-3 px-4 font-medium">{row.client}</td>
+            <td className="py-3 px-4 text-center">{row.date}</td>
+            <td className="py-3 px-4 text-center">{row.contactNo}</td>
+            <td className="py-3 px-4 text-center">{row.salesRep}</td>
+            <td className="py-3 px-4 text-center">{row.product}</td>
+            <td className="py-3 px-4 text-center">{row.company}</td>
+            <td className="py-3 px-4 text-right font-semibold">{row.amount}</td>
+            <td className="py-3 px-4 text-left">{row.remark}</td>
+            <td className="py-3 px-4 text-center">
+              <button
+                onClick={() => handleDelete(row.id)}
+                className="text-red-600 hover:text-red-800 text-xs"
+              >
+                Delete
+              </button>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
 ) : (
+<div className="overflow-x-auto">
+    <table className="w-full text-sm">
+      <thead className="bg-gray-50 border-b">
+        <tr>
+          <th className="py-3 px-4 text-left">
+            <input
+              type="checkbox"
+              checked={selectedRows.length === filteredInteractions.length && filteredInteractions.length > 0}
+              onChange={toggleSelectAll}
+              className="rounded"
+            />
+          </th>
+          <th className="py-3 px-4 text-left font-semibold text-gray-600">Client</th>
+          <th className="py-3 px-4 text-center font-semibold text-gray-600">Date</th>
+          <th className="py-3 px-4 text-center font-semibold text-gray-600">Contact No</th>
+          <th className="py-3 px-4 text-left font-semibold text-gray-600">Discussion Summary</th>
+          <th className="py-3 px-4 text-center font-semibold text-gray-600">Call Status</th>
+          <th className="py-3 px-4 text-center font-semibold text-gray-600">Follow-up Date</th>
+          <th className="py-3 px-4 text-center font-semibold text-gray-600">Follow-up Time</th>
+          <th className="py-3 px-4 text-center font-semibold text-gray-600">Actions</th>
+        </tr>
+      </thead>
 
-              <table className="w-full text-sm">
-  <thead className="border-b text-gray-500">
-    <tr>
-      <th className="py-3 text-left">Client</th>
-      <th>Date</th>
-      <th>Contact No</th>
-      <th>Discussion Summary</th>
-      <th>Call Status</th>
-      <th>Follow-up Date</th>
-      <th>Follow-up Time</th>
-    </tr>
-  </thead>
-
-  <tbody>
-    {interactions.map(row => (
-      <tr key={row.id} className="border-b last:border-none">
-        <td className="py-3 font-medium">{row.client}</td>
-        <td>{row.date}</td>
-        <td>{row.contactNo}</td>
-        <td>{row.summary}</td>
-        <td>{row.callStatus}</td>
-        <td>{row.followUpDate}</td>
-        <td>{row.followUpTime}</td>
-      </tr>
-    ))}
-  </tbody>
-</table>
-
-            )}
-          </div>
+      <tbody>
+        {filteredInteractions.map(row => (
+          <tr key={row.id} className="border-b last:border-none hover:bg-gray-50">
+            <td className="py-3 px-4">
+              <input
+                type="checkbox"
+                checked={selectedRows.includes(row.id)}
+                onChange={() => toggleRowSelection(row.id)}
+                className="rounded"
+              />
+            </td>
+            <td className="py-3 px-4 font-medium">{row.client}</td>
+            <td className="py-3 px-4 text-center">{row.date}</td>
+            <td className="py-3 px-4 text-center">{row.contactNo}</td>
+            <td className="py-3 px-4 text-left">{row.summary}</td>
+            <td className="py-3 px-4 text-center">{row.callStatus}</td>
+            <td className="py-3 px-4 text-center">{row.followUpDate}</td>
+            <td className="py-3 px-4 text-center">{row.followUpTime}</td>
+            <td className="py-3 px-4 text-center">
+              <button
+                onClick={() => handleDelete(row.id)}
+                className="text-red-600 hover:text-red-800 text-xs"
+              >
+                Delete
+              </button>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+)}          </div>
         </div>
       </div>
 
