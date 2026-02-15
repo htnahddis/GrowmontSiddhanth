@@ -1,23 +1,109 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 import Sidebar from '@/components/Sidebar';
 import Navbar from '@/components/Navbar';
 import Reminders from '@/components/Remiander';
 import { Employee, Reminder, ProductSale } from '@/types';
-import employeesData from '@/data/employees.json';
-import remindersData from '@/data/reminders.json';
-import productsData from '@/data/products.json';
 
 const DashboardPage: React.FC = () => {
 
-  const router= useRouter()
+  /* REMOVED: const router = useRouter() */
+  const { token, isLoading } = useAuth(); // Get token
+  const router = useRouter();
 
-  const employees: Employee[] = employeesData;
-  const reminders: Reminder[] = remindersData;
-  const products: ProductSale[] = productsData;
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [reminders, setReminders] = useState<Reminder[]>([]);
+  const [products, setProducts] = useState<ProductSale[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Protect route
+  useEffect(() => {
+    if (!isLoading && !token) {
+      router.push('/login');
+    }
+  }, [isLoading, token, router]);
+
+  useEffect(() => {
+    if (!token) return;
+
+    const fetchData = async () => {
+      try {
+        const headers = { 'Authorization': `Bearer ${token}` };
+
+        // Fetch Employees
+        const empRes = await fetch('http://127.0.0.1:8000/api/employees/', { headers });
+        const empData = await empRes.json();
+
+        // Map Employees (Backend to Frontend type)
+        const mappedEmployees: Employee[] = Array.isArray(empData) ? empData.map((e: any) => ({
+          id: String(e.id),
+          name: e.name,
+          department: "Sales", // Default
+          level: "Senior", // Default
+          position: "Sales Representative",
+          gender: e.gender,
+          birthday: e.dob,
+          fullAge: 30, // Default
+          avatar: e.avatar || "/avatar.png",
+          location: "New York",
+          mobile: e.mobile_no,
+          skype: e.email,
+          clients: e.clients_count,
+          interactions: e.interactions_count,
+          successRate: 85, // Default
+          clientsAvailable: "20/30",
+          interactionsAvailable: "15/20",
+          successRateAvailable: "85/100"
+        })) : [];
+        setEmployees(mappedEmployees);
+
+        // Fetch Sales (mapped to Products)
+        const salesRes = await fetch('http://127.0.0.1:8000/api/sales/', { headers });
+        const salesData = await salesRes.json();
+
+        const mappedProducts: ProductSale[] = Array.isArray(salesData) ? salesData.map((s: any) => ({
+          id: String(s.id),
+          clientName: s.client?.name || "Unknown",
+          type: s.product === 'MF' ? 'Mutual Funds' :
+            s.product === 'HI' ? 'Health Insurance' :
+              s.product === 'GI' ? 'General Insurance' : 'Life Insurance',
+          amount: parseFloat(s.amount),
+          category: 1, // Default number
+          createdDate: s.date,
+          priority: "Medium",
+          representatives: [s.sales_rep?.avatar || "/avatar.png"]
+        })) : [];
+        setProducts(mappedProducts);
+
+        // Fetch Interactions (mapped to Reminders)
+        const intRes = await fetch('http://127.0.0.1:8000/api/interactions/', { headers });
+        const intData = await intRes.json();
+
+        const mappedReminders: Reminder[] = Array.isArray(intData) ? intData.map((i: any) => ({
+          id: String(i.id),
+          title: `Follow up: ${i.client?.name}`,
+          datetime: i.next_follow_up, // Date string
+          type: 'call',
+          date: i.date?.split('T')[0] || '2023-01-01',
+          time: '10:00 AM', // Mock
+          duration: '30m', // Mock
+          status: 'upcoming'
+        })) : [];
+        setReminders(mappedReminders);
+
+      } catch (error) {
+        console.error("Dashboard fetch error:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [token]);
 
   const getLevelColor = (level: string) => {
     switch (level) {
@@ -57,22 +143,22 @@ const DashboardPage: React.FC = () => {
               <p className="text-gray-600 text-sm mb-1">Welcome back, Evan!</p>
               <h1 className="text-3xl font-bold text-[#00337C]">Dashboard</h1>
             </div>
-    
+
             {/* Employees Section */}
             <div className="bg-white rounded-3xl border border-gray-200 p-6 mb-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-semibold text-gray-900">Employees</h2>
                 <Link href="/employees">
-                <button className="text-sm text-[#3B5BA5] font-medium cursor-pointer">
-                  View all →
-                </button>
+                  <button className="text-sm text-[#3B5BA5] font-medium cursor-pointer">
+                    View all →
+                  </button>
                 </Link>
               </div>
 
               <div className="grid grid-cols-3 gap-6">
                 {employees.slice(0, 6).map((employee) => (
                   <div key={employee.id} onClick={() => router.push(`/employees/${employee.id}`)}
-                  className="flex flex-col items-center bg-[#F4F9FD] py-5 px-2 rounded-3xl cursor-pointer">
+                    className="flex flex-col items-center bg-[#F4F9FD] py-5 px-2 rounded-3xl cursor-pointer">
                     <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 mb-3 flex items-center justify-center text-white text-xl font-semibold">
                       {employee.name.split(' ').map(n => n[0]).join('')}
                     </div>
@@ -91,9 +177,9 @@ const DashboardPage: React.FC = () => {
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-semibold text-gray-900">Products Sales</h2>
                 <Link href="/sales">
-                <button className="text-sm text-[#3B5BA5] cursor-pointer font-medium">
-                  View all →
-                </button>
+                  <button className="text-sm text-[#3B5BA5] cursor-pointer font-medium">
+                    View all →
+                  </button>
                 </Link>
               </div>
 

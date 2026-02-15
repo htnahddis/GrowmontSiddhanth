@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { useAuth } from "@/context/AuthContext";
 import Sidebar from "@/components/Sidebar";
 import Navbar from "@/components/Navbar";
-import data from "@/data/data.json";
 import AddSalesModal from "@/components/AddSalesModal";
 
 interface Assignee {
@@ -22,15 +22,6 @@ interface Client {
   category: string;
 }
 
-interface Task {
-  id: string;
-  name: string;
-  estimate: string;
-  spentTime: string;
-  assignee: Assignee;
-  priority: string;
-}
-
 interface Category {
   id: string;
   name: string;
@@ -38,20 +29,27 @@ interface Category {
 }
 
 const SalesPage = () => {
+  const { token } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState<string>("insurance");
   const [salesFromDB, setSalesFromDB] = useState<Client[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const categories = data.categories as Category[];
-  const dummyClients = data.clients as Client[];
-  const tasks = data.tasks as Task[];
+  // Hardcoded categories as they are static UI elements
+  const categories: Category[] = [
+    { id: "insurance", name: "Insurance", label: "Category" },
+    { id: "mutualfunds", name: "Mutual Funds", label: "Category" },
+    { id: "equity", name: "Equity", label: "Category" },
+  ];
 
   /* ================= FETCH SALES FROM DJANGO ================= */
   useEffect(() => {
+    if (!token) return;
+
     const fetchSales = async () => {
       try {
-        const res = await fetch("http://127.0.0.1:8000/api/sales/");
+        const headers = { 'Authorization': `Bearer ${token}` };
+        const res = await fetch("http://127.0.0.1:8000/api/sales/", { headers });
         if (!res.ok) throw new Error("Failed to fetch sales");
 
         const apiData = await res.json();
@@ -60,14 +58,14 @@ const SalesPage = () => {
           id: String(sale.id),
           name: sale.client?.name ?? "Unknown Client",
           date: sale.date,
-         spentTime:
-  sale.frequency === "M"
-    ? "Monthly"
-    : sale.frequency === "Q"
-    ? "Quarterly"
-    : sale.frequency === "Y"
-    ? "Yearly"
-    : "--",
+          spentTime:
+            sale.frequency === "M"
+              ? "Monthly"
+              : sale.frequency === "Q"
+                ? "Quarterly"
+                : sale.frequency === "Y"
+                  ? "Yearly"
+                  : "--",
 
           assignee: {
             name: sale.sales_rep?.name ?? "N/A",
@@ -75,7 +73,7 @@ const SalesPage = () => {
           },
           priority: "Medium", // not in model → safe default
           status: "In Progress", // not in model → safe default
-          category: "insurance", // derived from product
+          category: (sale.product === "HI" || sale.product === "LI" || sale.product === "GI") ? "insurance" : "mutualfunds",
         }));
 
         setSalesFromDB(mappedData);
@@ -87,85 +85,82 @@ const SalesPage = () => {
     };
 
     fetchSales();
-  }, []);
+  }, [token]);
 
   const handleSaveSale = async (formData: any) => {
-  try {
-    const payload = {
-      // Backend creates client by name (Fix #1 from previous)
-      client_name: formData.client,     // "Sidhdanth"
-      contactNo: formData.contactNo,
-      
-      // Sale model required fields
-      sales_rep: (() => {
-  const repId = parseInt(formData.employeeId);
-  return isNaN(repId) ? 1 : repId;  // fallback to ID 1 if invalid
-})(),
+    try {
+      const payload = {
+        // Backend creates client by name
+        client_name: formData.client,
+        contactNo: formData.contactNo,
 
-      date: formData.date,
-      product: "HI",  // Health Insurance
-      company: formData.company,
-      scheme: formData.company + " Scheme",  // auto-generate
-      amount: parseFloat(formData.amount) || 0,
-      frequency: "M",  // Monthly
-      remarks: formData.remark || ""
-    };
+        // Sale model required fields
+        sales_rep: (() => {
+          const repId = parseInt(formData.employeeId);
+          return isNaN(repId) ? 1 : repId; // fallback to ID 1 if invalid
+        })(),
 
-    console.log('Final payload to Django:', payload);
+        date: formData.date,
+        product: "HI", // Health Insurance
+        company: formData.company,
+        scheme: formData.company + " Scheme", // auto-generate
+        amount: parseFloat(formData.amount) || 0,
+        frequency: "M", // Monthly
+        remarks: formData.remark || "",
+      };
 
-    const res = await fetch("http://127.0.0.1:8000/api/sales/", {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
+      console.log("Final payload to Django:", payload);
 
-   if (!res.ok) {
-  const errorText = await res.text();
-  
-  if (errorText.includes('sales_rep')) {
-    alert('Employee ID not found. Use ID 1 or check /admin/employees');
-  } else if (errorText.includes('client')) {
-    alert('Client issue. Check client name');
-  } else {
-    alert('Server error: ' + errorText);
-  }
-  return;
-}
+      const res = await fetch("http://127.0.0.1:8000/api/sales/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
+      if (!res.ok) {
+        const errorText = await res.text();
 
-    const newSale = await res.json();
-    
-    // Your exact mapping logic
-    const mappedSale: Client = {
-      id: String(newSale.id),
-      name: newSale.client.name,  // Now "Sidhdanth"!
-      date: newSale.date,
-      spentTime: newSale.frequency === "M" ? "Monthly" : 
-                newSale.frequency === "Q" ? "Quarterly" : "Yearly",
-      assignee: {
-        name: newSale.sales_rep.name,
-        avatar: newSale.sales_rep.avatar || "/avatar.png",
-      },
-      priority: "Medium",
-      status: "In Progress",
-      category: newSale.product === "HI" ? "insurance" : "mutualfunds",
-    };
+        if (errorText.includes("sales_rep")) {
+          alert("Employee ID not found. Use ID 1 or check /admin/employees");
+        } else if (errorText.includes("client")) {
+          alert("Client issue. Check client name");
+        } else {
+          alert("Server error: " + errorText);
+        }
+        return;
+      }
 
-    setSalesFromDB(prev => [mappedSale, ...prev]);
-    
-  } catch (error: any) {
-    console.error('Error:', error.message);
-    alert('Failed: ' + error.message);
-  }
-};
+      const newSale = await res.json();
 
+      // Your exact mapping logic
+      const mappedSale: Client = {
+        id: String(newSale.id),
+        name: newSale.client.name,
+        date: newSale.date,
+        spentTime:
+          newSale.frequency === "M"
+            ? "Monthly"
+            : newSale.frequency === "Q"
+              ? "Quarterly"
+              : "Yearly",
+        assignee: {
+          name: newSale.sales_rep.name,
+          avatar: newSale.sales_rep.avatar || "/avatar.png",
+        },
+        priority: "Medium",
+        status: "In Progress",
+        category: newSale.product === "HI" ? "insurance" : "mutualfunds",
+      };
 
-      
+      setSalesFromDB((prev) => [mappedSale, ...prev]);
+    } catch (error: any) {
+      console.error("Error:", error.message);
+      alert("Failed: " + error.message);
+    }
+  };
 
-
-  /* ================= DB DATA OR FALLBACK ================= */
-  const clientsToShow =
-    salesFromDB.length > 0 ? salesFromDB : dummyClients;
+  /* ================= DB DATA ONLY ================= */
+  const clientsToShow = salesFromDB;
 
   const filteredClients = clientsToShow.filter(
     (client) => client.category === selectedCategory
@@ -181,18 +176,6 @@ const SalesPage = () => {
         return "text-green-500";
       default:
         return "text-gray-500";
-    }
-  };
-
-  const getPriorityIcon = (priority: string) => {
-    switch (priority.toLowerCase()) {
-      case "high":
-      case "medium":
-        return "↑";
-      case "low":
-        return "↓";
-      default:
-        return "";
     }
   };
 
@@ -242,11 +225,10 @@ const SalesPage = () => {
                     <div
                       key={category.id}
                       onClick={() => setSelectedCategory(category.id)}
-                      className={`cursor-pointer p-3 rounded-lg transition ${
-                        selectedCategory === category.id
-                          ? "bg-[#00337C]/11 border-l-4 border-[#00337C]"
-                          : "hover:bg-gray-50"
-                      }`}
+                      className={`cursor-pointer p-3 rounded-lg transition ${selectedCategory === category.id
+                        ? "bg-[#00337C]/11 border-l-4 border-[#00337C]"
+                        : "hover:bg-gray-50"
+                        }`}
                     >
                       <p className="text-xs text-gray-500 mb-1">
                         {category.label}
@@ -273,9 +255,11 @@ const SalesPage = () => {
                   </h3>
 
                   {loading && (
-                    <p className="text-sm text-gray-500">
-                      Loading sales...
-                    </p>
+                    <p className="text-sm text-gray-500">Loading sales...</p>
+                  )}
+
+                  {!loading && filteredClients.length === 0 && (
+                    <p className="text-sm text-gray-500">No sales found.</p>
                   )}
 
                   <div className="space-y-3">
@@ -285,21 +269,15 @@ const SalesPage = () => {
                         className="bg-white p-4 rounded-lg flex items-center justify-between hover:shadow-md transition"
                       >
                         <div className="flex-1">
-                          <p className="text-xs text-gray-500 mb-1">
-                            Name
-                          </p>
+                          <p className="text-xs text-gray-500 mb-1">Name</p>
                           <p className="font-medium text-gray-900">
                             {client.name}
                           </p>
                         </div>
 
                         <div className="flex-1">
-                          <p className="text-xs text-gray-500 mb-1">
-                            Date
-                          </p>
-                          <p className="text-sm text-gray-700">
-                            {client.date}
-                          </p>
+                          <p className="text-xs text-gray-500 mb-1">Date</p>
+                          <p className="text-sm text-gray-700">{client.date}</p>
                         </div>
 
                         <div className="flex-1">
@@ -335,20 +313,6 @@ const SalesPage = () => {
                     ))}
                   </div>
                 </div>
-
-                {/* TASKS (UNCHANGED) */}
-                <div className="space-y-3 mt-6">
-                  {tasks.map((task) => (
-                    <div
-                      key={task.id}
-                      className="bg-white p-4 rounded-lg border border-gray-200"
-                    >
-                      <p className="font-medium text-gray-900">
-                        {task.name}
-                      </p>
-                    </div>
-                  ))}
-                </div>
               </div>
             </div>
           </div>
@@ -357,10 +321,12 @@ const SalesPage = () => {
 
       <AddSalesModal
         isOpen={showModal}
-        onClose={() => setShowModal(false)} 
-         onSave={handleSaveSale}     />
+        onClose={() => setShowModal(false)}
+        onSave={handleSaveSale}
+      />
     </div>
   );
 };
 
 export default SalesPage;
+

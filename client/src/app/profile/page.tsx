@@ -1,21 +1,19 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Sidebar from "@/components/Sidebar";
 import Navbar from "@/components/Navbar";
-import profileData from "@/data/profileData.json";
 import AddReminderModal from "@/components/AddReminderModal";
+
+import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
 
 interface User {
   id: string;
   name: string;
-  position: string;
-  department: string;
-  location: string;
   birthday: string;
   email: string;
   mobile: string;
-  skype: string;
   avatar: string;
 }
 
@@ -53,14 +51,110 @@ interface Reminder {
 type TabType = "clients" | "productSales" | "reminders";
 
 const ProfilePage = () => {
+  const { user: authUser, isLoading } = useAuth();
+  const router = useRouter();
+
+
   const [activeTab, setActiveTab] = useState<TabType>("reminders");
   const [openReminder, setOpenReminder] = useState(false);
 
+  // State
+  const [user, setUser] = useState<User | null>(null);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [productSales, setProductSales] = useState<ProductSale[]>([]);
+  const [reminders, setReminders] = useState<Reminder[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const user = profileData.user as User;
-  const clients = profileData.clients as Client[];
-  const productSales = profileData.productSales as ProductSale[];
-  const reminders = profileData.reminders as Reminder[];
+  useEffect(() => {
+    if (!isLoading && !authUser) {
+      router.push('/login');
+    }
+  }, [isLoading, authUser, router]);
+
+  useEffect(() => {
+    if (!authUser) return;
+
+    const fetchProfileData = async () => {
+      try {
+        const userId = authUser.id; // Use logged-in user ID
+
+        // 1. Fetch User Data
+        const userRes = await fetch(`http://127.0.0.1:8000/api/employees/${userId}/`);
+        if (userRes.ok) {
+          const userData = await userRes.json();
+          setUser({
+            id: String(userData.id),
+            name: userData.name,
+            birthday: userData.dob,
+            email: userData.email,
+            mobile: userData.mobile_no,
+            avatar: userData.avatar || "/avatar.png",
+          });
+        }
+
+        // 2. Fetch Clients
+        const clientsRes = await fetch(`http://127.0.0.1:8000/api/employees/${userId}/clients/`);
+        if (clientsRes.ok) {
+          const clientsData = await clientsRes.json();
+          setClients(clientsData.map((c: any) => ({
+            id: String(c.id),
+            name: c.name,
+            category: "Insurance", // Mock
+            level: "High", // Mock
+            avatar: "/avatar.png" // Mock
+          })));
+        }
+
+        // 3. Fetch Sales
+        const salesRes = await fetch(`http://127.0.0.1:8000/api/employees/${userId}/sales/`);
+        if (salesRes.ok) {
+          const salesData = await salesRes.json();
+          setProductSales(salesData.map((s: any) => ({
+            id: String(s.id),
+            productId: s.product,
+            clientName: s.client?.name || "Unknown",
+            createdDate: s.date,
+            priority: "High", // Mock
+            category: s.product === 'MF' ? "Mutual Funds" : "Insurance",
+            amount: parseFloat(s.amount),
+            categoryCount: 1,
+            representatives: [s.sales_rep?.avatar || "/avatar.png"]
+          })));
+        }
+
+        // 4. Fetch Reminders (Interactions)
+        // We'll fetch all interactions for this employee
+        // Since there is no specific endpoint for employee interactions in the list provided,
+        // we might have to fetch all and filter, OR (better) assume interactions are reminders.
+        // Let's try fetching all interactions and filtering by employee in frontend if needed,
+        // or just showing recent interactions.
+        const interactionRes = await fetch(`http://127.0.0.1:8000/api/interactions/`);
+        if (interactionRes.ok) {
+          const intData = await interactionRes.json();
+          // Filter for this employee if backend sends employee field
+          const myInteractions = intData.filter((i: any) => i.employee?.id === userId);
+
+          setReminders(myInteractions.map((i: any) => ({
+            id: String(i.id),
+            title: i.discussion_notes.substring(0, 30) + "...",
+            date: i.date,
+            time: "10:00 AM", // Mock
+            duration: "30m", // Mock
+            priority: "Medium",
+            icon: "call", // Mock
+            color: "blue" // Mock
+          })));
+        }
+
+      } catch (err) {
+        console.error("Profile fetch error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfileData();
+  }, []);
 
   const getPriorityColor = (priority: string) => {
     switch (priority.toLowerCase()) {
@@ -101,62 +195,20 @@ const ProfilePage = () => {
     }
   };
 
+  if (loading) return <div className="p-6">Loading profile...</div>;
+  if (!user) return <div className="p-6">User not found</div>;
+
   return (
     <div className="min-h-screen bg-[#F4F9FD]">
       <Sidebar />
-        <Navbar />
+      <Navbar />
       <div className="flex-1 flex flex-col overflow-hidden ml-64 mt-16 p-6">
         <main className="flex-1 overflow-y-auto">
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-3xl font-bold text-gray-900">Profile</h1>
             <div className="flex items-center gap-3">
-              {activeTab === "productSales" && (
-                <button className="bg-[#2D8A4E] hover:bg-[#236b3d] cursor-pointer text-white px-4 py-2 rounded-lg flex items-center gap-2 transition">
-                  <span className="text-lg">+</span>
-                  Add Sales
-                </button>
-              )}
-              {activeTab === "clients" && (
-                <button className="bg-[#2D8A4E] hover:bg-[#236b3d] cursor-pointer text-white px-4 py-2 rounded-lg flex items-center gap-2 transition">
-                  <span className="text-lg">+</span>
-                  Add Interactions
-                </button>
-              )}
-              {activeTab === "reminders" && (
-                <button className="bg-[#2D8A4E] hover:bg-[#236b3d] cursor-pointer text-white px-4 py-2 rounded-lg flex items-center gap-2 transition"
-                onClick={() => setOpenReminder(true)}>
-                  <span className="text-lg">+</span>
-                  Add Reminder
-                </button>
-
-    
-              )}
-
-               <AddReminderModal
-        isOpen={openReminder}
-        onClose={() => setOpenReminder(false)}
-      />
-              <button className="p-2 hover:bg-gray-200 rounded-lg transition">
-                <svg
-                  className="w-6 h-6 text-gray-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                  />
-                </svg>
-              </button>
+              {/* Add buttons and Modal removed as per requirement */}
+              {/* Settings icon next to Add buttons removed */}
             </div>
           </div>
 
@@ -178,24 +230,10 @@ const ProfilePage = () => {
                       <h2 className="text-lg font-bold text-gray-900">
                         {user.name}
                       </h2>
-                      <p className="text-sm text-gray-600">{user.position}</p>
+                      {/* Position removed */}
                     </div>
                   </div>
-                  <button className="p-2 hover:bg-gray-100 rounded-lg transition">
-                    <svg
-                      className="w-5 h-5 text-gray-600"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                      />
-                    </svg>
-                  </button>
+                  {/* Settings icon removed */}
                 </div>
 
                 {/* Main Info */}
@@ -204,69 +242,16 @@ const ProfilePage = () => {
                     Main info
                   </h3>
                   <div className="space-y-4">
-                    <div>
-                      <label className="text-xs text-gray-500 mb-1 block">
-                        Position
-                      </label>
-                      <input
-                        type="text"
-                        value={user.position}
-                        readOnly
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 bg-gray-50"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-gray-500 mb-1 block">
-                        Department
-                      </label>
-                      <input
-                        type="text"
-                        value={user.department}
-                        readOnly
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 bg-gray-50"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-gray-500 mb-1 block">
-                        Location
-                      </label>
-                      <div className="relative">
-                        <input
-                          type="text"
-                          value={user.location}
-                          readOnly
-                          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 bg-gray-50"
-                        />
-                        <svg
-                          className="w-5 h-5 text-gray-400 absolute right-3 top-2.5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                          />
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                          />
-                        </svg>
-                      </div>
-                    </div>
+                    {/* Position, Department, Location removed */}
                     <div>
                       <label className="text-xs text-gray-500 mb-1 block">
                         Birthday Date
                       </label>
                       <div className="relative">
                         <input
-                        readOnly
+                          readOnly
                           type="text"
-                          value=""
+                          value={user.birthday}
                           placeholder=""
                           className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 bg-gray-50"
                         />
@@ -316,17 +301,7 @@ const ProfilePage = () => {
                         className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 bg-gray-50"
                       />
                     </div>
-                    <div>
-                      <label className="text-xs text-gray-500 mb-1 block">
-                        Skype
-                      </label>
-                      <input
-                        type="text"
-                        value={user.skype}
-                        readOnly
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 bg-gray-50"
-                      />
-                    </div>
+                    {/* Skype removed */}
                   </div>
                 </div>
               </div>
@@ -339,31 +314,28 @@ const ProfilePage = () => {
                 <div className="flex gap-3 mb-6">
                   <button
                     onClick={() => setActiveTab("productSales")}
-                    className={`px-6 py-2 rounded-full text-sm font-medium transition ${
-                      activeTab === "productSales"
-                        ? "bg-[#2D8A4E] text-white"
-                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                    }`}
+                    className={`px-6 py-2 rounded-full text-sm font-medium transition ${activeTab === "productSales"
+                      ? "bg-[#2D8A4E] text-white"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      }`}
                   >
                     Product Sales
                   </button>
                   <button
                     onClick={() => setActiveTab("clients")}
-                    className={`px-6 py-2 rounded-full text-sm font-medium transition ${
-                      activeTab === "clients"
-                        ? "bg-[#2D8A4E] text-white"
-                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                    }`}
+                    className={`px-6 py-2 rounded-full text-sm font-medium transition ${activeTab === "clients"
+                      ? "bg-[#2D8A4E] text-white"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      }`}
                   >
                     Clients
                   </button>
                   <button
                     onClick={() => setActiveTab("reminders")}
-                    className={`px-6 py-2 rounded-full text-sm font-medium transition ${
-                      activeTab === "reminders"
-                        ? "bg-[#2D8A4E] text-white"
-                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                    }`}
+                    className={`px-6 py-2 rounded-full text-sm font-medium transition ${activeTab === "reminders"
+                      ? "bg-[#2D8A4E] text-white"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      }`}
                   >
                     Reminders
                   </button>
@@ -567,10 +539,86 @@ const ProfilePage = () => {
               </div>
             </div>
           </div>
+
+          {/* Change Password Section */}
+          <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 mt-6 max-w-2xl">
+            <h2 className="text-xl font-bold text-[#00337C] mb-6">Change Password</h2>
+            <ChangePasswordForm />
+          </div>
         </main>
       </div>
     </div>
   );
 };
+
+function ChangePasswordForm() {
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const { token } = useAuth(); // Need token to call API
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setMessage("");
+    setError("");
+
+    try {
+      const res = await fetch('http://127.0.0.1:8000/api/auth/password/change/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ old_password: oldPassword, new_password: newPassword })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to update password');
+      }
+
+      setMessage("Password updated successfully");
+      setOldPassword("");
+      setNewPassword("");
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
+  return (
+    <form onSubmit={handleChangePassword} className="space-y-4">
+      {message && <div className="text-green-600 bg-green-50 p-3 rounded text-sm">{message}</div>}
+      {error && <div className="text-red-600 bg-red-50 p-3 rounded text-sm">{error}</div>}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
+        <input
+          type="password"
+          value={oldPassword}
+          onChange={(e) => setOldPassword(e.target.value)}
+          className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500"
+          required
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+        <input
+          type="password"
+          value={newPassword}
+          onChange={(e) => setNewPassword(e.target.value)}
+          className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500"
+          required
+        />
+      </div>
+      <button
+        type="submit"
+        className="bg-[#00337C] text-white px-6 py-2 rounded-lg hover:bg-[#00265c] transition-colors"
+      >
+        Update Password
+      </button>
+    </form>
+  );
+}
 
 export default ProfilePage;

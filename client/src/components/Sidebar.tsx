@@ -3,7 +3,8 @@
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 
 interface MenuItem {
   id: string;
@@ -14,33 +15,11 @@ interface MenuItem {
 
 const Sidebar: React.FC = () => {
   const pathname = usePathname();
-  const router = useRouter();
+  /* REMOVED: import { useRouter } from "next/navigation"; */
+  const { logout, user } = useAuth(); // Use context
 
-  const handleLogout = async () => {
-    try {
-      const refreshToken = localStorage.getItem("refreshToken");
-
-      if (refreshToken) {
-        await fetch("http://127.0.0.1:8000/api/auth/logout/", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            refresh: refreshToken,
-          }),
-        });
-      }
-    } catch (error) {
-      console.error("Logout error:", error);
-    } finally {
-      // Clear tokens no matter what
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("refreshToken");
-
-      // Redirect to login page
-      router.push("/");
-    }
+  const handleLogout = () => {
+    logout();
   };
 
   const menuItems: MenuItem[] = [
@@ -104,17 +83,19 @@ const Sidebar: React.FC = () => {
 
       <nav className="flex-1 p-4">
         <ul className="space-y-1">
-          {menuItems.map((item) => {
+          {menuItems.filter(item => {
+            if (item.id === 'employees' && user?.role !== 'ADMIN') return false;
+            return true;
+          }).map((item) => {
             const isActive = pathname === item.href;
             return (
               <li key={item.id}>
                 <Link
                   href={item.href}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors fill-white ${
-                    isActive
-                      ? "bg-[#00337C]/11  text-[#00337C]"
-                      : "text-[#7D8592] hover:bg-gray-100"
-                  }`}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors fill-white ${isActive
+                    ? "bg-[#00337C]/11  text-[#00337C]"
+                    : "text-[#7D8592] hover:bg-gray-100"
+                    }`}
                 >
                   {item.icon}
                   <span className="font-medium">{item.label}</span>

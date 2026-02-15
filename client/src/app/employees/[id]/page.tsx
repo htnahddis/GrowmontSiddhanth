@@ -1,11 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Sidebar from '@/components/Sidebar';
 import Navbar from '@/components/Navbar';
-import employeesData from '@/data/employees.json';
-import productsData from '@/data/products.json';
 
 interface Employee {
   id: string;
@@ -50,22 +48,87 @@ interface ProductSale {
 const EmployeeDetailPage: React.FC = () => {
   const params = useParams();
   const employeeId = params.id as string;
-  
+
   const [activeTab, setActiveTab] = useState<'product-sales' | 'clients' | 'overview'>('clients');
-  
-  const employee = employeesData.find((emp: any) => emp.id === employeeId) as Employee | undefined;
-  const products: ProductSale[] = productsData;
+  const [employee, setEmployee] = useState<Employee | null>(null);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [products, setProducts] = useState<ProductSale[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Mock clients data
-  const clients: Client[] = [
-    { id: '1', name: 'Shawn Stone', type: 'Insurance', specialty: 'Insurance' },
-    { id: '2', name: 'Randy Delgado', type: 'Mutual Funds', specialty: 'Mutual Funds' },
-    { id: '3', name: 'Emily Tyler', type: 'ETF', specialty: 'ETF' },
-    { id: '4', name: 'Blake Silva', type: 'Insurance', specialty: 'Insurance' }
-  ];
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        if (!employeeId) return;
 
+        // 1. Fetch Employee Details
+        const empRes = await fetch(`http://127.0.0.1:8000/api/employees/${employeeId}/`);
+        if (empRes.ok) {
+          const e = await empRes.json();
+          setEmployee({
+            id: String(e.id),
+            name: e.name,
+            email: e.email,
+            department: "Sales",
+            level: "Senior", // Mock
+            position: "Sales Representative", // Mock
+            gender: e.gender,
+            birthday: e.dob,
+            fullAge: 30, // Mock
+            avatar: e.avatar || "/avatar.png",
+            location: "New York", // Mock
+            mobile: e.mobile_no,
+            skype: e.email, // Mock
+            clients: e.clients_count,
+            interactions: e.interactions_count,
+            successRate: 85, // Mock
+            clientsAvailable: "12/16",
+            interactionsAvailable: "6/12",
+            successRateAvailable: "42/50"
+          });
+        }
+
+        // 2. Fetch Clients (from API)
+        const clientsRes = await fetch(`http://127.0.0.1:8000/api/employees/${employeeId}/clients/`);
+        if (clientsRes.ok) {
+          const clientsData = await clientsRes.json();
+          setClients(clientsData.map((c: any) => ({
+            id: String(c.id),
+            name: c.name,
+            type: "Insurance", // Mock/Default
+            specialty: "General" // Mock/Default
+          })));
+        }
+
+        // 3. Fetch Sales (from API)
+        const salesRes = await fetch(`http://127.0.0.1:8000/api/employees/${employeeId}/sales/`);
+        if (salesRes.ok) {
+          const salesData = await salesRes.json();
+          setProducts(salesData.map((s: any) => ({
+            id: String(s.id),
+            clientName: s.client?.name || "Unknown",
+            type: s.product === 'MF' ? 'Mutual Funds' : 'Insurance',
+            amount: parseFloat(s.amount),
+            category: 1,
+            createdDate: s.date,
+            priority: "Medium",
+            representatives: []
+          })));
+        }
+
+      } catch (err) {
+        console.error("Error fetching employee details:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [employeeId]);
+
+
+  if (loading) return <div className="p-6">Loading...</div>;
   if (!employee) {
-    return <div>Employee not found</div>;
+    return <div className="p-6">Employee not found</div>;
   }
 
   const getLevelColor = (level: string) => {
@@ -133,7 +196,7 @@ const EmployeeDetailPage: React.FC = () => {
             {/* Main Info */}
             <div className="mb-6">
               <h3 className="font-semibold text-gray-900 mb-4">Main info</h3>
-              
+
               <div className="space-y-4">
                 <div>
                   <label className="text-sm text-gray-600 mb-1 block">Position</label>
@@ -191,7 +254,7 @@ const EmployeeDetailPage: React.FC = () => {
             {/* Contact Info */}
             <div>
               <h3 className="font-semibold text-gray-900 mb-4">Contact Info</h3>
-              
+
               <div className="space-y-4">
                 <div>
                   <label className="text-sm text-gray-600 mb-1 block">Email</label>
@@ -232,31 +295,28 @@ const EmployeeDetailPage: React.FC = () => {
             <div className="flex items-center gap-2 mb-6">
               <button
                 onClick={() => setActiveTab('product-sales')}
-                className={`px-6 py-2 rounded-lg font-medium transition-colors ${
-                  activeTab === 'product-sales'
+                className={`px-6 py-2 rounded-lg font-medium transition-colors ${activeTab === 'product-sales'
                     ? 'bg-[#2D8A4E] text-white'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
+                  }`}
               >
                 Product Sales
               </button>
               <button
                 onClick={() => setActiveTab('clients')}
-                className={`px-6 py-2 rounded-lg font-medium transition-colors ${
-                  activeTab === 'clients'
+                className={`px-6 py-2 rounded-lg font-medium transition-colors ${activeTab === 'clients'
                     ? 'bg-[#2D8A4E] text-white'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
+                  }`}
               >
                 Clients
               </button>
               <button
                 onClick={() => setActiveTab('overview')}
-                className={`px-6 py-2 rounded-lg font-medium transition-colors ${
-                  activeTab === 'overview'
+                className={`px-6 py-2 rounded-lg font-medium transition-colors ${activeTab === 'overview'
                     ? 'bg-[#2D8A4E] text-white'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
+                  }`}
               >
                 Overview
               </button>

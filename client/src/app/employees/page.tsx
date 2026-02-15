@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 import Sidebar from '@/components/Sidebar';
 import Navbar from '@/components/Navbar';
 import AddEmployeeModal from '@/components/AddEmployeeModal';
@@ -18,17 +19,22 @@ interface Employee {
 }
 
 const EmployeesPage: React.FC = () => {
+  const { token } = useAuth();
   const router = useRouter();
   const [openEmployee, setOpenEmployee] = useState(false);
   const [activeTab, setActiveTab] = useState<'list' | 'activity'>('list');
   const [employees, setEmployees] = useState<Employee[]>([]);
 
   useEffect(() => {
-    fetch('http://127.0.0.1:8000/api/employees/')
+    if (!token) return;
+
+    fetch('http://127.0.0.1:8000/api/employees/', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
       .then(res => res.json())
       .then(data => setEmployees(data))
       .catch(err => console.error(err));
-  }, []);
+  }, [token]);
 
   return (
     <div className="min-h-screen bg-[#F4F9FD]">
@@ -43,21 +49,19 @@ const EmployeesPage: React.FC = () => {
             <div className="flex bg-gray-200 rounded-3xl p-1">
               <button
                 onClick={() => setActiveTab('list')}
-                className={`px-6 py-2 rounded-3xl font-medium ${
-                  activeTab === 'list'
-                    ? 'bg-[#2D8A4E] text-white'
-                    : 'text-gray-600'
-                }`}
+                className={`px-6 py-2 rounded-3xl font-medium ${activeTab === 'list'
+                  ? 'bg-[#2D8A4E] text-white'
+                  : 'text-gray-600'
+                  }`}
               >
                 List
               </button>
               <button
                 onClick={() => setActiveTab('activity')}
-                className={`px-6 py-2 rounded-3xl font-medium ${
-                  activeTab === 'activity'
-                    ? 'bg-[#2D8A4E] text-white'
-                    : 'text-gray-600'
-                }`}
+                className={`px-6 py-2 rounded-3xl font-medium ${activeTab === 'activity'
+                  ? 'bg-[#2D8A4E] text-white'
+                  : 'text-gray-600'
+                  }`}
               >
                 Activity
               </button>

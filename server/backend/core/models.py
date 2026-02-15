@@ -1,6 +1,8 @@
 from django.db import models
 
 
+from django.contrib.auth.models import User
+
 # Employee Model
 class Employee(models.Model):
     GENDER_CHOICES = [
@@ -9,6 +11,14 @@ class Employee(models.Model):
         ('O', 'Other')
     ]
 
+    ROLE_CHOICES = [
+        ('ADMIN', 'Admin'),
+        ('EMPLOYEE', 'Employee'),
+    ]
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True, related_name='employee')
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='EMPLOYEE')
+    
     name = models.CharField(max_length=100)
     email = models.EmailField(unique=True)
     mobile_no = models.CharField(max_length=15)

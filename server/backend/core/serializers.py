@@ -20,6 +20,7 @@ class EmployeeSerializer(serializers.ModelSerializer):
             'clients_count',
             'sales_count',
             'interactions_count',
+            'role',
         ]
 
 

@@ -51,60 +51,73 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
     if (res.ok) {
       onSuccess?.();
       onClose();
-    } 
+    }
     const result = await res.json();
 
-if (!res.ok) {
-  console.error("Backend error:", result);
-  alert(JSON.stringify(result));
-  return;
-}
+    if (!res.ok) {
+      console.error("Backend error:", result);
+      alert(JSON.stringify(result));
+      return;
+    }
 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#1C7947]/30">
-      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#1C7947]/30 backdrop-blur-sm">
+      <div className="w-full max-w-lg rounded-2xl bg-white p-8 shadow-2xl">
 
         {/* Header */}
-        <div className="mb-6 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-blue-700">
+        <div className="mb-6 flex justify-between items-center border-b pb-4">
+          <h2 className="text-2xl font-bold text-gray-800">
             Add Employee
           </h2>
-          <button onClick={onClose} className="text-xl">×</button>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 transition">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
 
         {/* Form */}
-        <div className="space-y-4">
+        <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
 
-          <input
-            name="name"
-            value={form.name}
-            onChange={handleChange}
-            placeholder="Employee Name"
-            className="w-full rounded-lg border px-4 py-2"
-          />
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">Employee Name</label>
+            <input
+              name="name"
+              value={form.name}
+              onChange={handleChange}
+              placeholder="Enter name"
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition"
+            />
+          </div>
 
-          <input
-            name="email"
-            value={form.email}
-            onChange={handleChange}
-            placeholder="Email"
-            type="email"
-            className="w-full rounded-lg border px-4 py-2"
-          />
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">Email</label>
+            <input
+              name="email"
+              value={form.email}
+              onChange={handleChange}
+              placeholder="Enter email"
+              type="email"
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition"
+            />
+          </div>
 
-          <input
-            name="mobile_no"
-            value={form.mobile_no}
-            onChange={handleChange}
-            placeholder="Mobile Number"
-            className="w-full rounded-lg border px-4 py-2"
-          />
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">Mobile Number</label>
+            <input
+              name="mobile_no"
+              value={form.mobile_no}
+              onChange={handleChange}
+              placeholder="Enter mobile number"
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition"
+            />
+          </div>
 
           {/* Gender */}
           <div>
-            <p className="mb-2 text-sm text-gray-500">Gender</p>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">Gender</label>
             <div className="flex gap-2">
               {[
                 { label: "Male", value: "M" },
@@ -115,10 +128,10 @@ if (!res.ok) {
                   key={g.value}
                   type="button"
                   onClick={() => setForm({ ...form, gender: g.value })}
-                  className={`flex-1 rounded-lg border px-3 py-2 text-sm
+                  className={`flex-1 rounded-lg border px-3 py-2 text-sm transition font-medium
                     ${form.gender === g.value
-                      ? "bg-green-600 text-white"
-                      : "hover:bg-green-600 hover:text-white"}`}
+                      ? "bg-[#2D8A4E] text-white border-[#2D8A4E]"
+                      : "border-gray-300 text-gray-700 hover:bg-gray-50"}`}
                 >
                   {g.label}
                 </button>
@@ -126,26 +139,32 @@ if (!res.ok) {
             </div>
           </div>
 
-          <input
-            name="dob"
-            value={form.dob}
-            onChange={handleChange}
-            type="date"
-            className="w-full rounded-lg border px-4 py-2"
-          />
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">Date of Birth</label>
+            <input
+              name="dob"
+              value={form.dob}
+              onChange={handleChange}
+              type="date"
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition"
+            />
+          </div>
 
           {/* Avatar */}
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => setAvatar(e.target.files?.[0] || null)}
-            className="w-full text-sm"
-          />
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">Avatar</label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => setAvatar(e.target.files?.[0] || null)}
+              className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
+            />
+          </div>
 
           <button
             onClick={handleSubmit}
             disabled={loading}
-            className="w-full rounded-xl py-2 text-white transition-colors bg-[#2D8A4E] hover:bg-[#236b3d]"
+            className="w-full rounded-xl bg-[#2D8A4E] py-3 text-white font-semibold shadow-lg hover:bg-[#236b3d] hover:shadow-xl transition transform active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
           >
             {loading ? "Saving..." : "Save Employee"}
           </button>

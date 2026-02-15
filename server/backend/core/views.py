@@ -11,6 +11,14 @@ import openpyxl
 from rest_framework.parsers import MultiPartParser
 from django.http import HttpResponse
 
+from django.contrib.auth.models import User
+from django.contrib.auth import authenticate
+from django.contrib.auth.hashers import make_password
+from django.core.mail import send_mail
+from django.conf import settings
+import random
+import string
+
 from .models import Employee, Sale, Interaction, Client
 
 from .serializers import (
@@ -77,16 +85,61 @@ class LogoutView(APIView):
 from rest_framework.parsers import MultiPartParser, FormParser
 
 @api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
 @parser_classes([MultiPartParser, FormParser])
 def employees_list(request):
 
+    # Check for Admin Role
+    if hasattr(request.user, 'employee') and request.user.employee.role == 'EMPLOYEE':
+        return Response({'error': 'Unauthorized'}, status=403)
+
     # 🔹 CREATE EMPLOYEE
     if request.method == 'POST':
-        serializer = EmployeeSerializer(data=request.data)
+        data = request.data.copy()
+        email = data.get('email')
+        name = data.get('name')
+
+        # 1. Generate Password
+        password = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
+        
+        # 2. Create User
+        try:
+            user = User.objects.create_user(username=email, email=email, password=password)
+        except Exception as e:
+            return Response({'error': str(e)}, status=400)
+
+        # 3. Create Employee
+        # serializer = EmployeeSerializer(data=data)
+        # We need to manually handle this or use serializer. 
+        # Since we have a OneToOne, we can just save the employee with the user.
+        
+        # Using serializer is better for validation of other fields
+        serializer = EmployeeSerializer(data=data)
         if serializer.is_valid():
-            serializer.save()
+            employee = serializer.save(user=user)
+            
+            # 4. Send Email (Mocking for now if no settings)
+            print(f"========================================")
+            print(f" NEW EMPLOYEE CREDENTIALS ")
+            print(f" Email: {email}")
+            print(f" Password: {password}")
+            print(f"========================================")
+
+            try:
+                send_mail(
+                    'Your GrowMont Account Credentials',
+                    f'Hello {name},\n\nYour account has been created.\n\nUsername: {email}\nPassword: {password}\n\nPlease login and change your password.',
+                    'admin@growmont.com',
+                    [email],
+                    fail_silently=True,
+                )
+            except:
+                pass
+
             return Response(serializer.data, status=201)
-        return Response(serializer.errors, status=400)
+        else:
+            user.delete() # Rollback user creation
+            return Response(serializer.errors, status=400)
 
     # 🔹 LIST EMPLOYEES
     employees = Employee.objects.annotate(
@@ -132,35 +185,57 @@ def employee_sales(request, id):
 #     serializer = SaleSerializer(sales, many=True)
 #     return Response(serializer.data)
 @api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
 def sales_list(request):
-   if request.method == 'POST':
-    data = request.data
+    # GET: List all sales
+    if request.method == 'GET':
+        user = request.user
+        if hasattr(user, 'employee') and user.employee.role == 'EMPLOYEE':
+            sales = Sale.objects.filter(sales_rep=user.employee)
+        else:
+            sales = Sale.objects.all()
+            
+        serializer = SaleSerializer(sales, many=True)
+        return Response(serializer.data)
+
+    # POST: Create a sale
+    if request.method == 'POST':
+        data = request.data
     
-    # CREATE CLIENT BY NAME
-    client_name = data.pop('client_name', '')
-    contact_no = data.pop('contactNo', '')
-    
-    if client_name:
-        client, created = Client.objects.get_or_create(
-            name=client_name,
-            defaults={'contact_number': contact_no}
-        )
-        data['client'] = client.id
-    else:
-        return Response({'error': 'client_name required'}, status=400)
-    data['sales_rep'] = Employee.objects.first().id
-    serializer = SaleCreateSerializer(data=data)
-    if serializer.is_valid():
-        sale = serializer.save()
-        read_serializer = SaleSerializer(sale)
-        return Response(read_serializer.data, status=201)
-    return Response(serializer.errors, status=400)
+        # CREATE CLIENT BY NAME
+        client_name = data.pop('client_name', '')
+        contact_no = data.pop('contactNo', '')
+        
+        if client_name:
+            client, created = Client.objects.get_or_create(
+                name=client_name,
+                defaults={'contact_number': contact_no}
+            )
+            data['client'] = client.id
+        else:
+            return Response({'error': 'client_name required'}, status=400)
+        
+        # Default to first employee if not provided (fallback)
+        if 'sales_rep' not in data:
+             data['sales_rep'] = Employee.objects.first().id
+             
+        serializer = SaleCreateSerializer(data=data)
+        if serializer.is_valid():
+            sale = serializer.save()
+            read_serializer = SaleSerializer(sale)
+            return Response(read_serializer.data, status=201)
+        return Response(serializer.errors, status=400)
 
 
 
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def interactions_list(request):
-    interactions = Interaction.objects.all()
+    user = request.user
+    if hasattr(user, 'employee') and user.employee.role == 'EMPLOYEE':
+        interactions = Interaction.objects.filter(employee=user.employee)
+    else:
+        interactions = Interaction.objects.all()
     serializer = InteractionSerializer(interactions, many=True)
     return Response(serializer.data)
 
@@ -357,10 +432,16 @@ def create_sale(request):
 
     client, _ = Client.objects.get_or_create(
         name=data['client'],
-        contact_number=data['contactNo']
+        defaults={'contact_number': data.get('contactNo', '')}  # Use get() for optional fields
     )
 
-    employee = Employee.objects.get(id=data['employeeId'])
+    try:
+        if request.user.employee.role == 'EMPLOYEE':
+             employee = request.user.employee
+        else:
+             employee = Employee.objects.get(id=data['employeeId'])
+    except Employee.DoesNotExist:
+        return Response({'error': 'Employee not found'}, status=400)
 
     sale = Sale.objects.create(
         client=client,
@@ -368,7 +449,9 @@ def create_sale(request):
         date=data['date'],
         company=data['company'],
         amount=data['amount'],
-        remarks=data['remark']
+        product=data['product'], # Added
+        frequency=data['frequency'], # Added
+        remarks=data.get('remark', '')
     )
 
     return Response({'id': sale.id}, status=201)
@@ -482,3 +565,65 @@ def create_employee(request):
         serializer.save()
         return Response(serializer.data, status=201)
     return Response(serializer.errors, status=400)
+
+
+# Change Password
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def change_password(request):
+    user = request.user
+    old_password = request.data.get('old_password')
+    new_password = request.data.get('new_password')
+
+    if not user.check_password(old_password):
+        return Response({'error': 'Wrong old password'}, status=400)
+
+    user.set_password(new_password)
+    user.save()
+    return Response({'message': 'Password updated successfully'})
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def current_user(request):
+    try:
+        serializer = EmployeeSerializer(request.user.employee)
+        return Response(serializer.data)
+    except AttributeError:
+        return Response({'error': 'User is not an employee'}, status=400)
+
+
+@api_view(['POST'])
+def forgot_password(request):
+    email = request.data.get('email')
+    try:
+        user = User.objects.get(email=email)
+        # Generate temp password
+        temp_password = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
+        user.set_password(temp_password)
+        user.save()
+
+        # Send Email
+        print(f"========================================")
+        print(f" PASSWORD RESET ")
+        print(f" Email: {email}")
+        print(f" Temp Password: {temp_password}")
+        print(f"========================================")
+
+        try:
+            send_mail(
+                'Password Reset Request',
+                f'Hello,\n\nYour password has been reset.\n\nTemporary Password: {temp_password}\n\nPlease login and change it immediately.',
+                'admin@growmont.com',
+                [email],
+                fail_silently=True,
+            )
+        except:
+            pass
+        
+        return Response({'message': 'If an account exists, a new password has been sent.'})
+
+    except User.DoesNotExist:
+        # Return success even if user not found to prevent enumeration
+        return Response({'message': 'If an account exists, a new password has been sent.'})
+

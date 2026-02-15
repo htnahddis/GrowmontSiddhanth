@@ -25,8 +25,8 @@ from core.views import (
     health_check, protected_view, LogoutView, sales_list, interactions_list,
     employee_clients,employee_detail,employee_sales, employees_list,    
     export_sales_excel,export_interactions_excel,import_sales_excel,import_interactions_excel,
-    create_sale, create_interaction, delete_interaction, delete_sale, create_employee, 
-    update_interaction, update_sale, export_interactions_excel_filtered, export_sales_excel_filtered
+    update_interaction, update_sale, export_interactions_excel_filtered, export_sales_excel_filtered,
+    change_password, current_user, forgot_password
     )
 
 
@@ -35,6 +35,9 @@ urlpatterns = [
 
     path('api/health/', health_check),
     path("api/protected/", protected_view),
+    path("api/me/", current_user),
+    path("api/auth/password/change/", change_password),
+    path("api/auth/password/forgot/", forgot_password),
 
     path('api/auth/login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/auth/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
@@ -64,7 +67,7 @@ urlpatterns = [
     path('api/export/interactions/filtered/', export_interactions_excel_filtered),
 
     # backend/urls.py
-    path('api/employees/', create_employee),
+
 
 
 ]
