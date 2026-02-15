@@ -7,6 +7,13 @@ import { useRouter } from "next/navigation";
 interface LoginResponse {
   access: string;
   refresh: string;
+  user: {
+    id: number;
+    name: string;
+    email: string;
+    avatar: string | null;
+    role: 'ADMIN' | 'EMPLOYEE';
+  };
 }
 
 const LoginPage = () => {
@@ -35,34 +42,40 @@ const LoginPage = () => {
     setLoading(true);
 
     try {
-      const res = await fetch(
-        "http://127.0.0.1:8000/api/auth/login/",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            username: formData.username, // Django uses username by default
-            password: formData.password,
-          }),
-        }
-      );
+      console.log('Attempting login...');
+      
+      const res = await fetch("http://127.0.0.1:8000/api/auth/login/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: formData.username,
+          password: formData.password,
+        }),
+      });
 
       if (!res.ok) {
-        throw new Error("Invalid credentials");
+        const errorData = await res.json();
+        throw new Error(errorData.detail || "Invalid credentials");
       }
 
       const data: LoginResponse = await res.json();
+      console.log('Login response:', data);
 
-      // Store tokens (DEV only – we’ll improve later)
+      // Store tokens and user data
       localStorage.setItem("accessToken", data.access);
       localStorage.setItem("refreshToken", data.refresh);
+      localStorage.setItem("user", JSON.stringify(data.user));
 
-      // Redirect after successful login
-      router.push("/dashboard");
+      console.log("Login successful, redirecting to dashboard...");
+
+      // Use window.location for a hard redirect to ensure clean state
+      window.location.href = "/dashboard";
+      
     } catch (err) {
-      setError("Invalid username or password");
+      console.error("Login error:", err);
+      setError(err instanceof Error ? err.message : "Invalid username or password");
     } finally {
       setLoading(false);
     }
@@ -103,7 +116,9 @@ const LoginPage = () => {
 
           {/* Error Message */}
           {error && (
-            <p className="text-red-600 text-center mb-4">{error}</p>
+            <div className="bg-red-50 border border-red-300 text-red-700 px-4 py-3 rounded-lg mb-4">
+              {error}
+            </div>
           )}
 
           {/* Login Form */}
@@ -114,7 +129,7 @@ const LoginPage = () => {
                 name="username"
                 value={formData.username}
                 onChange={handleChange}
-                placeholder="Username"
+                placeholder="Username / Email"
                 required
                 className="w-full px-6 py-4 bg-gray-100 rounded-full text-gray-700 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500 transition"
               />
@@ -184,7 +199,7 @@ const LoginPage = () => {
 
           <div className="mt-6 text-center">
             <a
-              href="#"
+              href="/forgot-password"
               className="text-sm text-gray-600 hover:text-green-700 transition"
             >
               Forgot Password?

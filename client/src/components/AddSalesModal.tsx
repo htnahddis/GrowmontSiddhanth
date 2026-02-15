@@ -1,99 +1,158 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
+import { api, endpoints } from '@/utils/api';
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (payload: any) => void;
+  onSave: () => void;
   initialData?: any;
 }
 
 interface Employee {
   id: number;
   name: string;
+  email: string;
+  role: string;
 }
 
 export default function AddSalesModal({ isOpen, onClose, onSave, initialData }: Props) {
-  const [employees, setEmployees] = useState<Employee[]>([]);
   const [form, setForm] = useState({
-    client: '',
     date: '',
-    contactNo: '',
-    employeeId: '',
-    product: 'MF', // Default
+    client_name: '',
+    sales_rep: '',
+    product: 'MF',
     company: '',
+    scheme: '',
     amount: '',
-    frequency: 'M', // Default
-    remark: '',
+    frequency: 'M',
+    remarks: '',
   });
 
-  // Fetch employees and set initial data
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [isEmployee, setIsEmployee] = useState(false);
+
+  // Fetch current user and employees on mount
   useEffect(() => {
     if (isOpen) {
-      // Fetch employees
-      fetch('http://127.0.0.1:8000/api/employees/')
-        .then(res => res.json())
-        .then(data => setEmployees(data))
-        .catch(err => console.error("Failed to fetch employees", err));
+      fetchCurrentUser();
+      fetchEmployees();
+    }
+  }, [isOpen]);
 
+  // Reset form when modal opens/closes or initialData changes
+  useEffect(() => {
+    if (isOpen) {
       if (initialData) {
+        // Edit mode
         setForm({
-          client: initialData.client || '',
           date: initialData.date || '',
-          contactNo: initialData.contactNo || '',
-          employeeId: initialData.employeeId?.toString() || '',
+          client_name: initialData.client_name || '',
+          sales_rep: initialData.sales_rep?.toString() || '',
           product: initialData.product || 'MF',
           company: initialData.company || '',
+          scheme: initialData.scheme || '',
           amount: initialData.amount || '',
           frequency: initialData.frequency || 'M',
-          remark: initialData.remark || '',
+          remarks: initialData.remarks || '',
         });
       } else {
+        // Add mode - set current date
+        const today = new Date().toISOString().split('T')[0];
         setForm({
-          client: '',
-          date: '',
-          contactNo: '',
-          employeeId: '',
+          date: today,
+          client_name: '',
+          sales_rep: currentUser?.id?.toString() || '',
           product: 'MF',
           company: '',
+          scheme: '',
           amount: '',
           frequency: 'M',
-          remark: '',
+          remarks: '',
         });
       }
     }
-  }, [isOpen, initialData]);
+  }, [isOpen, initialData, currentUser]);
+
+  const fetchCurrentUser = async () => {
+    try {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      setCurrentUser(user);
+      setIsEmployee(user.role === 'EMPLOYEE');
+      
+      // Set sales_rep to current user if they're an employee
+      if (user.role === 'EMPLOYEE') {
+        setForm(prev => ({ ...prev, sales_rep: user.id.toString() }));
+      }
+    } catch (error) {
+      console.error('Error fetching user:', error);
+    }
+  };
+
+  const fetchEmployees = async () => {
+    try {
+      const data = await api.get('/api/employees/dropdown/');
+      setEmployees(data);
+    } catch (error) {
+      console.error('Error fetching employees:', error);
+      toast.error('Failed to load employees');
+    }
+  };
 
   if (!isOpen) return null;
 
-  const handleChange = (e: any) =>
+  const handleChange = (e: any) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+  };
 
-  const handleSubmit = () => {
-    const payload = {
-      client: form.client,
-      contactNo: form.contactNo,
-      date: form.date,
-      company: form.company,
-      amount: form.amount,
-      remark: form.remark,
-      product: form.product,
-      frequency: form.frequency,
-      employeeId: form.employeeId // Ensure this is sent
-    };
+  const handleSubmit = async () => {
+    // Validation
+    if (!form.date || !form.client_name || !form.product || !form.company || !form.scheme || !form.amount || !form.frequency) {
+      toast.error('Please fill all required fields');
+      return;
+    }
 
-    console.log('Modal sending to Sales page:', payload);
-    onSave(payload);
-    onClose();
+    if (!form.sales_rep) {
+      toast.error('Please select a sales representative');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      if (initialData?.id) {
+        // Update existing sale
+        await api.put(endpoints.updateSale(initialData.id), form);
+        toast.success('Sale updated successfully!');
+      } else {
+        // Create new sale
+        await api.post(endpoints.createSale, form);
+        toast.success('Sale created successfully!');
+      }
+      
+      onSave(); // Trigger parent to reload data
+      onClose();
+    } catch (error: any) {
+      console.error('Error saving sale:', error);
+      toast.error(error.message || 'Failed to save sale');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#1C7947]/30 backdrop-blur-sm">
-      <div className="w-full max-w-lg rounded-2xl bg-white p-8 shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+      <div className="w-full max-w-3xl rounded-2xl bg-white p-8 shadow-2xl max-h-[90vh] overflow-y-auto">
+
         {/* Header */}
         <div className="mb-6 flex justify-between items-center border-b pb-4">
-          <h2 className="text-2xl font-bold text-gray-800">{initialData ? 'Edit Sale' : 'Add New Sale'}</h2>
+          <h2 className="text-2xl font-bold text-gray-800">
+            {initialData ? 'Edit Sale' : 'Add New Sale'}
+          </h2>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700 transition">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -101,134 +160,187 @@ export default function AddSalesModal({ isOpen, onClose, onSave, initialData }: 
           </button>
         </div>
 
-        <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
+        <div className="space-y-4">
 
-          {/* Row 1: Client & Contact */}
+          {/* Row 1: Date & Client Name */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Client Name</label>
-              <input
-                name="client"
-                value={form.client}
-                placeholder="Enter name"
-                className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition"
-                onChange={handleChange}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Contact Number</label>
-              <input
-                name="contactNo"
-                value={form.contactNo}
-                placeholder="Enter number"
-                className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition"
-                onChange={handleChange}
-              />
-            </div>
-          </div>
-
-          {/* Row 2: Sales Rep & Date */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Sales Rep</label>
-              <select
-                name="employeeId"
-                value={form.employeeId}
-                onChange={handleChange}
-                className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition bg-white"
-              >
-                <option value="">Select Rep</option>
-                {employees.map(emp => (
-                  <option key={emp.id} value={emp.id}>{emp.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Date</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Date <span className="text-red-500">*</span>
+              </label>
               <input
                 type="date"
                 name="date"
                 value={form.date}
-                className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition"
                 onChange={handleChange}
+                className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Client Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                name="client_name"
+                value={form.client_name}
+                placeholder="Enter client name"
+                onChange={handleChange}
+                className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition"
+                required
               />
             </div>
           </div>
 
-          {/* Row 3: Product & Frequency */}
+          {/* Row 2: Sales Representative */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">
+              Sales Representative <span className="text-red-500">*</span>
+            </label>
+            {isEmployee ? (
+              <input
+                type="text"
+                value={currentUser?.name || 'Loading...'}
+                disabled
+                className="w-full rounded-lg border border-gray-300 px-4 py-2 bg-gray-100 text-gray-700 cursor-not-allowed"
+              />
+            ) : (
+              <select
+                name="sales_rep"
+                value={form.sales_rep}
+                onChange={handleChange}
+                className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition"
+                required
+              >
+                <option value="">Select sales representative</option>
+                {employees.map((emp) => (
+                  <option key={emp.id} value={emp.id}>
+                    {emp.name} ({emp.role})
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          {/* Row 3: Product & Company */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Product</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Product <span className="text-red-500">*</span>
+              </label>
               <select
                 name="product"
                 value={form.product}
                 onChange={handleChange}
-                className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition bg-white"
+                className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition"
+                required
               >
                 <option value="MF">Mutual Funds</option>
                 <option value="HI">Health Insurance</option>
                 <option value="GI">General Insurance</option>
                 <option value="LI">Life Insurance</option>
+                <option value="NCD">NCDs</option>
+                <option value="MLD">MLDs</option>
+                <option value="BOND">Bonds</option>
+                <option value="CFD">Corporate FDs</option>
+                <option value="AIF">AIFs</option>
+                <option value="PMS">PMS</option>
+                <option value="ADV">Advisory</option>
+                <option value="SB">Shares Broking</option>
+                <option value="US">Unlisted Shares</option>
+                <option value="RE">Real Estate</option>
+                <option value="LOAN">Loans</option>
+                <option value="WILL">Will Making</option>
               </select>
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Frequency</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Company <span className="text-red-500">*</span>
+              </label>
+              <input
+                name="company"
+                value={form.company}
+                placeholder="Enter company name"
+                onChange={handleChange}
+                className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition"
+                required
+              />
+            </div>
+          </div>
+
+          {/* Row 4: Scheme */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">
+              Scheme <span className="text-red-500">*</span>
+            </label>
+            <input
+              name="scheme"
+              value={form.scheme}
+              placeholder="Enter scheme name"
+              onChange={handleChange}
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition"
+              required
+            />
+          </div>
+
+          {/* Row 5: Amount & Frequency */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Amount <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="number"
+                name="amount"
+                value={form.amount}
+                placeholder="0.00"
+                onChange={handleChange}
+                className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Frequency <span className="text-red-500">*</span>
+              </label>
               <select
                 name="frequency"
                 value={form.frequency}
                 onChange={handleChange}
-                className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition bg-white"
+                className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition"
+                required
               >
                 <option value="M">Monthly</option>
                 <option value="Q">Quarterly</option>
+                <option value="H">Half Yearly</option>
                 <option value="Y">Yearly</option>
+                <option value="O">One Time</option>
               </select>
             </div>
           </div>
 
-          {/* Row 4: Company & Amount */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Company</label>
-              <input
-                name="company"
-                value={form.company}
-                placeholder="Company Name"
-                className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition"
-                onChange={handleChange}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Amount</label>
-              <input
-                name="amount"
-                value={form.amount}
-                placeholder="0.00"
-                type="number"
-                className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition"
-                onChange={handleChange}
-              />
-            </div>
-          </div>
-
-          {/* Remarks */}
+          {/* Remarks (Optional) */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">Remarks</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">
+              Remarks (Optional)
+            </label>
             <textarea
-              name="remark"
-              value={form.remark}
+              name="remarks"
+              value={form.remarks}
               placeholder="Enter any additional notes..."
+              onChange={handleChange}
               className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition"
               rows={3}
-              onChange={handleChange}
             />
           </div>
 
+          {/* Submit Button */}
           <button
             onClick={handleSubmit}
-            className="w-full rounded-xl bg-[#2D8A4E] py-3 text-white font-semibold shadow-lg hover:bg-[#236b3d] hover:shadow-xl transition transform active:scale-95"
+            disabled={loading}
+            className="w-full rounded-xl bg-[#2D8A4E] py-3 text-white font-semibold shadow-lg hover:bg-[#236b3d] hover:shadow-xl transition transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {initialData ? 'Update Sale' : 'Save New Sale'}
+            {loading ? 'Saving...' : initialData ? 'Update Sale' : 'Save Sale'}
           </button>
         </div>
       </div>

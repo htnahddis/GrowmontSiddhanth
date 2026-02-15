@@ -4,123 +4,147 @@ import React, { useEffect, useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import Navbar from "@/components/Navbar";
 import toast from "react-hot-toast";
-
-/* ✅ ADD MODAL */
 import AddInteractionModal from "@/components/AddInteractionsModal";
+import { api, endpoints } from "@/utils/api";
 
-interface Assignee {
-  name: string;
-  avatar: string;
-}
-
-interface Client {
-  id: string;
-  name: string;
+interface Interaction {
+  id: number;
   date: string;
-  spentTime: string;
-  assignee: Assignee;
+  client_name: string;
+  client_contact: string;
+  employee: number;
+  employee_name: string;
+  follow_up_date: string;
+  follow_up_time: string;
   priority: string;
-  status: string;
-  category: string;
-}
-
-interface Task {
-  id: string;
-  name: string;
-  estimate: string;
-  spentTime: string;
-  assignee: Assignee;
-  priority: string;
-}
-
-interface Category {
-  id: string;
-  name: string;
-  label: string;
+  priority_display: string;
+  discussion_notes: string;
 }
 
 const InteractionsPage = () => {
-  const [selectedCategory, setSelectedCategory] = useState<string>("insurance");
-  const [clients, setClients] = useState<Client[]>([]);
+  const [interactions, setInteractions] = useState<Interaction[]>([]);
+  const [filteredInteractions, setFilteredInteractions] = useState<Interaction[]>([]);
   const [showModal, setShowModal] = useState(false);
-
-  /* ✅ STATIC CATEGORIES (UNCHANGED UI) */
-  const categories: Category[] = [
-    { id: "insurance", name: "Insurance", label: "Category" },
-    { id: "followup", name: "Follow Up", label: "Category" },
-    { id: "meeting", name: "Meetings", label: "Category" },
-  ];
-
-  /* ✅ STATIC TASKS (LEFT AS-IS) */
-  const tasks: Task[] = [];
-
-  /* ================= FETCH INTERACTIONS FROM DB ================= */
+  const [loading, setLoading] = useState(true);
+  const [selectedPriority, setSelectedPriority] = useState<string>("ALL");
+  const [editingInteraction, setEditingInteraction] = useState<any>(null);
 
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/api/interactions/")
-      .then((res) => res.json())
-      .then((data) => {
-        const mapped = data.map((i: any) => ({
-          id: i.id,
-          name: i.client.name,
-          date: i.date,
-          spentTime: "30 mins",
-          assignee: {
-            name: i.employee?.name || "Manager",
-            avatar: "/avatar.png",
-          },
-          priority: "Medium",
-          status: "In Progress",
-          category: "insurance",
-        }));
-
-        setClients(mapped);
-      })
-      .catch(() => toast.error("Failed to load interactions"));
+    fetchInteractions();
   }, []);
 
-  const filteredClients = clients.filter(
-    (client) => client.category === selectedCategory
-  );
+  useEffect(() => {
+    filterInteractions();
+  }, [interactions, selectedPriority]);
+
+  const fetchInteractions = async () => {
+    try {
+      setLoading(true);
+      const data = await api.get(endpoints.interactions);
+      console.log('Interactions loaded:', data);
+      setInteractions(data);
+      toast.success(`Loaded ${data.length} interactions`);
+    } catch (error) {
+      console.error('Failed to load interactions:', error);
+      toast.error("Failed to load interactions");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filterInteractions = () => {
+    if (selectedPriority === "ALL") {
+      setFilteredInteractions(interactions);
+    } else {
+      setFilteredInteractions(
+        interactions.filter(i => i.priority === selectedPriority)
+      );
+    }
+  };
+
+  const handleEdit = (interaction: Interaction) => {
+    setEditingInteraction({
+      id: interaction.id,
+      date: interaction.date,
+      client_name: interaction.client_name,
+      client_contact: interaction.client_contact,
+      employee: interaction.employee,
+      follow_up_date: interaction.follow_up_date,
+      follow_up_time: interaction.follow_up_time,
+      priority: interaction.priority,
+      discussion_notes: interaction.discussion_notes,
+    });
+    setShowModal(true);
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this interaction?')) {
+      return;
+    }
+
+    try {
+      await api.delete(endpoints.deleteInteraction(id));
+      toast.success('Interaction deleted successfully');
+      fetchInteractions();
+    } catch (error) {
+      console.error('Failed to delete interaction:', error);
+      toast.error('Failed to delete interaction');
+    }
+  };
+
+  const handleSaveInteraction = () => {
+    setShowModal(false);
+    setEditingInteraction(null);
+    fetchInteractions();
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setEditingInteraction(null);
+  };
 
   const getPriorityColor = (priority: string) => {
-    switch (priority.toLowerCase()) {
-      case "high":
-        return "text-red-500";
-      case "medium":
-        return "text-yellow-500";
-      case "low":
-        return "text-green-500";
+    switch (priority) {
+      case "HIGH":
+        return "text-red-600 bg-red-50";
+      case "MEDIUM":
+        return "text-yellow-600 bg-yellow-50";
+      case "LOW":
+        return "text-green-600 bg-green-50";
       default:
-        return "text-gray-500";
+        return "text-gray-600 bg-gray-50";
     }
   };
 
-  const getPriorityIcon = (priority: string) => {
-    switch (priority.toLowerCase()) {
-      case "high":
-      case "medium":
-        return "↑";
-      case "low":
-        return "↓";
+  const getPriorityBadgeColor = (priority: string) => {
+    switch (priority) {
+      case "HIGH":
+        return "bg-red-100 text-red-700 border-red-200";
+      case "MEDIUM":
+        return "bg-yellow-100 text-yellow-700 border-yellow-200";
+      case "LOW":
+        return "bg-green-100 text-green-700 border-green-200";
       default:
-        return "";
+        return "bg-gray-100 text-gray-700 border-gray-200";
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "done":
-        return "bg-green-100 text-green-700";
-      case "in progress":
-        return "bg-blue-100 text-blue-700";
-      case "to do":
-        return "bg-gray-100 text-gray-700";
-      case "in review":
-        return "bg-purple-100 text-purple-700";
-      default:
-        return "bg-gray-100 text-gray-700";
-    }
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-IN', { 
+      day: '2-digit', 
+      month: 'short', 
+      year: 'numeric' 
+    });
+  };
+
+  const formatTime = (timeString: string) => {
+    if (!timeString) return '';
+    const [hours, minutes] = timeString.split(':');
+    const hour = parseInt(hours);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const displayHour = hour % 12 || 12;
+    return `${displayHour}:${minutes} ${ampm}`;
   };
 
   return (
@@ -133,42 +157,42 @@ const InteractionsPage = () => {
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-3xl font-bold text-[#00337C]">Interactions</h1>
 
-            {/* ✅ OPEN MODAL */}
             <button
               onClick={() => setShowModal(true)}
               className="bg-[#2D8A4E] hover:bg-[#236b3d] transition-colors text-white px-4 py-2 rounded-lg flex items-center gap-2 cursor-pointer font-medium"
             >
               <span className="text-lg">+</span>
-              Add Interactions
+              Add Interaction
             </button>
           </div>
 
           <div className="grid grid-cols-12 gap-6">
-            {/* Left Panel - Categories */}
+            {/* Left Panel - Priority Filter */}
             <div className="col-span-3">
               <div className="bg-white rounded-lg shadow-sm p-4">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="font-semibold text-gray-900">
-                    Current Interactions
-                  </h2>
-                </div>
+                <h2 className="font-semibold text-gray-900 mb-4">
+                  Filter by Priority
+                </h2>
 
                 <div className="space-y-2">
-                  {categories.map((category) => (
+                  {['ALL', 'HIGH', 'MEDIUM', 'LOW'].map((priority) => (
                     <div
-                      key={category.id}
-                      onClick={() => setSelectedCategory(category.id)}
+                      key={priority}
+                      onClick={() => setSelectedPriority(priority)}
                       className={`cursor-pointer p-3 rounded-lg transition ${
-                        selectedCategory === category.id
+                        selectedPriority === priority
                           ? "bg-[#00337C]/11 border-l-4 border-[#00337C]"
                           : "hover:bg-gray-50"
                       }`}
                     >
-                      <p className="text-xs text-gray-500 mb-1">
-                        {category.label}
-                      </p>
                       <p className="font-medium text-gray-900">
-                        {category.name}
+                        {priority === 'ALL' ? 'All Interactions' : `${priority} Priority`}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {priority === 'ALL' 
+                          ? interactions.length 
+                          : interactions.filter(i => i.priority === priority).length
+                        } items
                       </p>
                     </div>
                   ))}
@@ -176,94 +200,142 @@ const InteractionsPage = () => {
               </div>
             </div>
 
-            {/* Right Panel - Interactions Overview */}
+            {/* Right Panel - Interactions List */}
             <div className="col-span-9">
               <div className="bg-white rounded-lg shadow-sm p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-6">
-                  Interactions Overview
-                </h2>
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    Interactions Overview
+                  </h2>
+                  <span className="text-sm text-gray-500">
+                    Showing {filteredInteractions.length} of {interactions.length} interactions
+                  </span>
+                </div>
 
-                <div className="bg-[#F4F9FD] rounded-lg p-4 mb-4">
-                  <h3 className="text-sm font-semibold text-gray-700 mb-4">
-                    All Interactions
-                  </h3>
-
+                {loading ? (
+                  <div className="text-center py-12">
+                    <div className="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-[#00337C]"></div>
+                    <p className="mt-4 text-gray-600">Loading interactions...</p>
+                  </div>
+                ) : filteredInteractions.length === 0 ? (
+                  <div className="text-center py-12">
+                    <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                    </svg>
+                    <p className="mt-4 text-gray-500">No interactions found</p>
+                    <button
+                      onClick={() => setShowModal(true)}
+                      className="mt-4 text-[#2D8A4E] hover:underline font-medium"
+                    >
+                      Add your first interaction
+                    </button>
+                  </div>
+                ) : (
                   <div className="space-y-3">
-                    {filteredClients.map((client) => (
+                    {filteredInteractions.map((interaction) => (
                       <div
-                        key={client.id}
-                        className="bg-white p-4 rounded-lg flex items-center justify-between hover:shadow-md transition"
+                        key={interaction.id}
+                        className="bg-[#F4F9FD] p-4 rounded-lg hover:shadow-md transition border border-gray-100"
                       >
-                        <div className="flex-1">
-                          <p className="text-xs text-gray-500 mb-1">Name</p>
-                          <p className="font-medium text-gray-900">
-                            {client.name}
-                          </p>
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 grid grid-cols-5 gap-4">
+                            
+                            {/* Date */}
+                            <div>
+                              <p className="text-xs text-gray-500 mb-1">Date</p>
+                              <p className="text-sm font-medium text-gray-900">
+                                {formatDate(interaction.date)}
+                              </p>
+                            </div>
+
+                            {/* Client Info */}
+                            <div>
+                              <p className="text-xs text-gray-500 mb-1">Client</p>
+                              <p className="text-sm font-medium text-gray-900">
+                                {interaction.client_name}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {interaction.client_contact}
+                              </p>
+                            </div>
+
+                            {/* Representative */}
+                            <div>
+                              <p className="text-xs text-gray-500 mb-1">Representative</p>
+                              <p className="text-sm font-medium text-gray-900">
+                                {interaction.employee_name}
+                              </p>
+                            </div>
+
+                            {/* Follow-up */}
+                            <div>
+                              <p className="text-xs text-gray-500 mb-1">Follow-up</p>
+                              <p className="text-sm font-medium text-gray-900">
+                                {formatDate(interaction.follow_up_date)}
+                              </p>
+                              <p className="text-xs text-gray-600">
+                                {formatTime(interaction.follow_up_time)}
+                              </p>
+                            </div>
+
+                            {/* Priority */}
+                            <div>
+                              <p className="text-xs text-gray-500 mb-1">Priority</p>
+                              <span className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold border ${getPriorityBadgeColor(interaction.priority)}`}>
+                                {interaction.priority_display}
+                              </span>
+                            </div>
+
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className="flex items-center gap-2 ml-4">
+                            <button
+                              onClick={() => handleEdit(interaction)}
+                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                              title="Edit"
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => handleDelete(interaction.id)}
+                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                              title="Delete"
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </div>
                         </div>
 
-                        <div className="flex-1">
-                          <p className="text-xs text-gray-500 mb-1">Date</p>
-                          <p className="text-sm text-gray-700">
-                            {client.date}
-                          </p>
-                        </div>
-
-                        <div className="flex-1">
-                          <p className="text-xs text-gray-500 mb-1">
-                            Spent Time
-                          </p>
-                          <p className="text-sm text-gray-700">
-                            {client.spentTime}
-                          </p>
-                        </div>
-
-                        <div className="flex-1">
-                          <p className="text-xs text-gray-500 mb-1">Assignee</p>
-                          <img
-                            src={client.assignee.avatar}
-                            alt={client.assignee.name}
-                            className="w-8 h-8 rounded-full"
-                          />
-                        </div>
-
-                        <div className="flex-1">
-                          <p className="text-xs text-gray-500 mb-1">Priority</p>
-                          <p
-                            className={`text-sm font-medium flex items-center gap-1 ${getPriorityColor(
-                              client.priority
-                            )}`}
-                          >
-                            {getPriorityIcon(client.priority)}{" "}
-                            {client.priority}
-                          </p>
-                        </div>
-
-                        <span
-                          className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                            client.status
-                          )}`}
-                        >
-                          {client.status}
-                        </span>
+                        {/* Discussion Notes (if present) */}
+                        {interaction.discussion_notes && (
+                          <div className="mt-3 pt-3 border-t border-gray-200">
+                            <p className="text-xs text-gray-500 mb-1">Notes</p>
+                            <p className="text-sm text-gray-700">
+                              {interaction.discussion_notes}
+                            </p>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
         </main>
       </div>
 
-      {/* ✅ ADD INTERACTION MODAL */}
+      {/* Modal */}
       <AddInteractionModal
         isOpen={showModal}
-        onClose={() => setShowModal(false)}
-        onSave={() => {
-          toast.success("Interaction added");
-          setShowModal(false);
-          window.location.reload();
-        }}
+        onClose={handleCloseModal}
+        onSave={handleSaveInteraction}
+        initialData={editingInteraction}
       />
     </div>
   );

@@ -4,34 +4,38 @@ import { useEffect, useState } from 'react';
 import Sidebar from '@/components/Sidebar';
 import Navbar from '@/components/Navbar';
 import toast from 'react-hot-toast';
-import { Trash2, Edit, X } from 'lucide-react';
+import { Trash2, Edit } from 'lucide-react';
 import AddSalesModal from '@/components/AddSalesModal';
 import AddInteractionModal from '@/components/AddInteractionsModal';
 
 type SalesRow = {
   id: number;
-  client: string;
+  client_name: string;
   date: string;
-  contactNo: string;
-  salesRep: string;
-  salesRepId: number;
-  product: string; // Changed from 'Yes' | 'No'
-  frequency: string; // Added
+  sales_rep_name: string;
+  sales_rep_id: number;
+  product: string;
+  product_display: string;
+  frequency: string;
+  frequency_display: string;
   company: string;
+  scheme: string;
   amount: string;
-  remark: string;
+  remarks: string;
 };
 
 type InteractionRow = {
   id: number;
-  client: string;
+  client_name: string;
+  client_contact: string;
   date: string;
-  contactNo: string;
-  summary: string;
-  callStatus: 'Yes' | 'No';
-  followUpDate: string;
-  followUpTime: string;
-  employeeId: number;
+  employee_name: string;
+  employee_id: number;
+  discussion_notes: string;
+  priority: string;
+  priority_display: string;
+  follow_up_date: string;
+  follow_up_time: string;
 };
 
 export default function InfoPortalPage() {
@@ -46,84 +50,152 @@ export default function InfoPortalPage() {
     dateFrom: '',
     dateTo: '',
     client: '',
-    salesRep: '', // for sales only
-    product: '', // for sales only
+    salesRep: '',
+    product: '',
+    priority: '',
   });
   const [showFilters, setShowFilters] = useState(false);
 
   const [editingRow, setEditingRow] = useState<SalesRow | InteractionRow | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
 
+  // Product options for dropdown
+  const productOptions = [
+    { value: '', label: 'All Products' },
+    { value: 'MF', label: 'Mutual Funds' },
+    { value: 'HI', label: 'Health Insurance' },
+    { value: 'GI', label: 'General Insurance' },
+    { value: 'LI', label: 'Life Insurance' },
+    { value: 'NCD', label: 'NCDs' },
+    { value: 'MLD', label: 'MLDs' },
+    { value: 'BOND', label: 'Bonds' },
+    { value: 'CFD', label: 'Corporate FDs' },
+    { value: 'AIF', label: 'AIFs' },
+    { value: 'PMS', label: 'PMS' },
+    { value: 'ADV', label: 'Advisory' },
+    { value: 'SB', label: 'Shares Broking' },
+    { value: 'US', label: 'Unlisted Shares' },
+    { value: 'RE', label: 'Real Estate' },
+    { value: 'LOAN', label: 'Loans' },
+    { value: 'WILL', label: 'Will Making' },
+  ];
+
+  // Priority options for dropdown
+  const priorityOptions = [
+    { value: '', label: 'All Priorities' },
+    { value: 'HIGH', label: 'High' },
+    { value: 'MEDIUM', label: 'Medium' },
+    { value: 'LOW', label: 'Low' },
+  ];
+
   const filteredSales = sales.filter(s => {
-    const matchesSearch = s.client.toLowerCase().includes(search.toLowerCase());
+    const matchesSearch = s.client_name.toLowerCase().includes(search.toLowerCase());
     const matchesDateFrom = !filters.dateFrom || s.date >= filters.dateFrom;
     const matchesDateTo = !filters.dateTo || s.date <= filters.dateTo;
-    const matchesClient = !filters.client || s.client.toLowerCase().includes(filters.client.toLowerCase());
-    const matchesSalesRep = !filters.salesRep || s.salesRep.toLowerCase().includes(filters.salesRep.toLowerCase());
-    const matchesProduct = !filters.product || s.product === filters.product.toUpperCase(); // Ensure case match if needed
+    const matchesClient = !filters.client || s.client_name.toLowerCase().includes(filters.client.toLowerCase());
+    const matchesSalesRep = !filters.salesRep || s.sales_rep_name.toLowerCase().includes(filters.salesRep.toLowerCase());
+    const matchesProduct = !filters.product || s.product === filters.product;
 
     return matchesSearch && matchesDateFrom && matchesDateTo && matchesClient && matchesSalesRep && matchesProduct;
   });
 
   const filteredInteractions = interactions.filter(i => {
-    const matchesSearch = i.client.toLowerCase().includes(search.toLowerCase());
+    const matchesSearch = i.client_name.toLowerCase().includes(search.toLowerCase());
     const matchesDateFrom = !filters.dateFrom || i.date >= filters.dateFrom;
     const matchesDateTo = !filters.dateTo || i.date <= filters.dateTo;
-    const matchesClient = !filters.client || i.client.toLowerCase().includes(filters.client.toLowerCase());
+    const matchesClient = !filters.client || i.client_name.toLowerCase().includes(filters.client.toLowerCase());
+    const matchesPriority = !filters.priority || i.priority === filters.priority;
 
-    return matchesSearch && matchesDateFrom && matchesDateTo && matchesClient;
+    return matchesSearch && matchesDateFrom && matchesDateTo && matchesClient && matchesPriority;
   });
 
   /* ================= FETCH FROM DB ================= */
 
   useEffect(() => {
-    fetch('http://127.0.0.1:8000/api/sales/')
-      .then(res => (res.ok ? res.json() : []))
+    const token = localStorage.getItem('accessToken');
+
+    // Fetch Sales
+    fetch('http://127.0.0.1:8000/api/sales/', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+      .then(res => {
+        if (res.status === 401) {
+          toast.error('Session expired. Please login again.');
+          window.location.href = '/';
+          return [];
+        }
+        return res.ok ? res.json() : [];
+      })
       .then(dbSales => {
         if (dbSales.length) {
           setSales(
             dbSales.map((s: any) => ({
               id: s.id,
-              client: s.client?.name || 'Unknown',
+              client_name: s.client_name || 'Unknown',
               date: s.date,
-              contactNo: s.client?.contact_number || '',
-              salesRep: s.sales_rep?.name || 'Unassigned',
-              salesRepId: s.sales_rep?.id,
-              product: s.product, // Map from DB
-              frequency: s.frequency, // Map from DB
+              sales_rep_name: s.sales_rep_name || 'Unassigned',
+              sales_rep_id: s.sales_rep_id,
+              product: s.product,
+              product_display: s.product_display,
+              frequency: s.frequency,
+              frequency_display: s.frequency_display,
               company: s.company,
+              scheme: s.scheme,
               amount: s.amount,
-              remark: s.remarks,
+              remarks: s.remarks || '',
             }))
           );
         }
+      })
+      .catch(err => {
+        console.error('Failed to fetch sales:', err);
+        toast.error('Failed to load sales');
       });
 
-    fetch('http://127.0.0.1:8000/api/interactions/')
-      .then(res => (res.ok ? res.json() : []))
+    // Fetch Interactions
+    fetch('http://127.0.0.1:8000/api/interactions/', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+      .then(res => {
+        if (res.status === 401) {
+          toast.error('Session expired. Please login again.');
+          window.location.href = '/';
+          return [];
+        }
+        return res.ok ? res.json() : [];
+      })
       .then(dbInteractions => {
         if (dbInteractions.length) {
           setInteractions(
             dbInteractions.map((i: any) => ({
               id: i.id,
-              client: i.client?.name || 'Unknown',
+              client_name: i.client_name || 'Unknown',
+              client_contact: i.client_contact || '',
               date: i.date,
-              contactNo: i.client?.contact_number || '',
-              summary: i.discussion_notes,
-              callStatus: 'Yes',
-              followUpDate: i.next_follow_up,
-              followUpTime: '10:00',
-              employeeId: i.employee?.id,
+              employee_name: i.employee_name || 'Unassigned',
+              employee_id: i.employee_id,
+              discussion_notes: i.discussion_notes || '',
+              priority: i.priority,
+              priority_display: i.priority_display,
+              follow_up_date: i.follow_up_date,
+              follow_up_time: i.follow_up_time,
             }))
           );
         }
+      })
+      .catch(err => {
+        console.error('Failed to fetch interactions:', err);
+        toast.error('Failed to load interactions');
       });
   }, []);
 
   /* ================= EXPORT ================= */
 
   const handleExport = async () => {
-    // Get the filtered data based on current tab
     const dataToExport = activeTab === 'sales' ? filteredSales : filteredInteractions;
 
     if (dataToExport.length === 0) {
@@ -131,28 +203,32 @@ export default function InfoPortalPage() {
       return;
     }
 
-    // Prepare the data payload
     const exportPayload = {
       data: dataToExport.map(row => {
         if (activeTab === 'sales') {
           const salesRow = row as SalesRow;
           return {
-            client: salesRow.client,
+            client_name: salesRow.client_name,
             date: salesRow.date,
-            contactNo: salesRow.contactNo,
-            salesRep: salesRow.salesRep,
+            sales_rep: salesRow.sales_rep_name,
+            product: salesRow.product_display,
             company: salesRow.company,
+            scheme: salesRow.scheme,
             amount: salesRow.amount,
-            remark: salesRow.remark,
+            frequency: salesRow.frequency_display,
+            remarks: salesRow.remarks,
           };
         } else {
           const interactionRow = row as InteractionRow;
           return {
-            client: interactionRow.client,
+            client_name: interactionRow.client_name,
+            client_contact: interactionRow.client_contact,
             date: interactionRow.date,
-            contactNo: interactionRow.contactNo,
-            summary: interactionRow.summary,
-            followUpDate: interactionRow.followUpDate,
+            employee: interactionRow.employee_name,
+            discussion_notes: interactionRow.discussion_notes,
+            priority: interactionRow.priority_display,
+            follow_up_date: interactionRow.follow_up_date,
+            follow_up_time: interactionRow.follow_up_time,
           };
         }
       }),
@@ -167,31 +243,27 @@ export default function InfoPortalPage() {
       const response = await fetch(url, {
         method: 'POST',
         headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(exportPayload),
       });
+
       if (!response.ok) {
-        const text = await response.text();
-        console.error(text);
         throw new Error('Export failed');
       }
-      if (response.ok) {
-        // Create a blob from the response
-        const blob = await response.blob();
-        const downloadUrl = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = downloadUrl;
-        link.download = activeTab === 'sales' ? 'filtered_sales.xlsx' : 'filtered_interactions.xlsx';
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        window.URL.revokeObjectURL(downloadUrl);
 
-        toast.success(`Exported ${dataToExport.length} ${activeTab === 'sales' ? 'sales' : 'interactions'}`);
-      } else {
-        toast.error('Export failed');
-      }
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = activeTab === 'sales' ? 'filtered_sales.xlsx' : 'filtered_interactions.xlsx';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+
+      toast.success(`Exported ${dataToExport.length} ${activeTab === 'sales' ? 'sales' : 'interactions'}`);
     } catch (error) {
       console.error('Export error:', error);
       toast.error('Export failed');
@@ -211,9 +283,26 @@ export default function InfoPortalPage() {
         ? 'http://127.0.0.1:8000/api/import/sales/'
         : 'http://127.0.0.1:8000/api/import/interactions/';
 
-    await fetch(url, { method: 'POST', body: formData });
-    toast.success('Imported successfully!');
-    window.location.reload();
+    try {
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData
+      });
+
+      if (response.ok) {
+        toast.success('Imported successfully!');
+        window.location.reload();
+      } else {
+        toast.error('Import failed');
+      }
+    } catch (error) {
+      console.error('Import error:', error);
+      toast.error('Import failed');
+    }
   };
 
   /* ================= ADD ================= */
@@ -226,7 +315,10 @@ export default function InfoPortalPage() {
 
     const res = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify(payload),
     });
 
@@ -235,6 +327,8 @@ export default function InfoPortalPage() {
       setShowModal(false);
       window.location.reload();
     } else {
+      const errorData = await res.json();
+      console.error('Add error:', errorData);
       toast.error('Failed to add');
     }
   };
@@ -251,7 +345,10 @@ export default function InfoPortalPage() {
 
     const res = await fetch(url, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify(payload),
     });
 
@@ -261,25 +358,14 @@ export default function InfoPortalPage() {
       setEditingRow(null);
       window.location.reload();
     } else {
+      const errorData = await res.json();
+      console.error('Update error:', errorData);
       toast.error('Failed to update');
     }
   };
 
   const openEditModal = (row: SalesRow | InteractionRow) => {
-    if (activeTab === 'sales') {
-      const salesRow = row as SalesRow;
-      // Transform the display data back to form data structure
-      setEditingRow({
-        ...salesRow,
-        // We need to fetch employeeId - for now using a placeholder
-        // You'll need to store employeeId in the row or fetch it
-      });
-    } else {
-      const interactionRow = row as InteractionRow;
-      setEditingRow({
-        ...interactionRow,
-      });
-    }
+    setEditingRow(row);
     setShowEditModal(true);
   };
 
@@ -289,12 +375,21 @@ export default function InfoPortalPage() {
         ? `http://127.0.0.1:8000/api/sales/${id}/delete/`
         : `http://127.0.0.1:8000/api/interactions/${id}/delete/`;
 
-    const res = await fetch(url, { method: 'DELETE' });
+    const res = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+        'Content-Type': 'application/json'
+      },
+      method: 'DELETE'
+    });
 
     if (res.ok) {
       toast.success('Deleted');
-      setSales(prev => prev.filter(r => r.id !== id));
-      setInteractions(prev => prev.filter(r => r.id !== id));
+      if (activeTab === 'sales') {
+        setSales(prev => prev.filter(r => r.id !== id));
+      } else {
+        setInteractions(prev => prev.filter(r => r.id !== id));
+      }
     } else {
       toast.error('Delete failed');
     }
@@ -313,14 +408,12 @@ export default function InfoPortalPage() {
     setSelectedRows([]);
   };
 
-  // Add toggle function for row selection
   const toggleRowSelection = (id: number) => {
     setSelectedRows(prev =>
       prev.includes(id) ? prev.filter(rowId => rowId !== id) : [...prev, id]
     );
   };
 
-  // Add select all function
   const toggleSelectAll = () => {
     const currentData = activeTab === 'sales' ? filteredSales : filteredInteractions;
     if (selectedRows.length === currentData.length) {
@@ -330,7 +423,6 @@ export default function InfoPortalPage() {
     }
   };
 
-  // Reset filters function
   const resetFilters = () => {
     setFilters({
       dateFrom: '',
@@ -338,12 +430,20 @@ export default function InfoPortalPage() {
       client: '',
       salesRep: '',
       product: '',
+      priority: '',
     });
   };
 
+  const formatAmount = (amount: string) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 0,
+    }).format(parseFloat(amount));
+  };
 
   return (
-    <div className=" bg-[#F6FAFD] min-h-screen">
+    <div className="bg-[#F6FAFD] min-h-screen">
       <Sidebar />
       <Navbar />
 
@@ -354,8 +454,8 @@ export default function InfoPortalPage() {
             <button
               onClick={() => setActiveTab('sales')}
               className={`px-6 py-2 rounded-3xl font-medium transition-colors ${activeTab === 'sales'
-                ? 'bg-[#2D8A4E] text-white'
-                : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-[#2D8A4E] text-white'
+                  : 'text-gray-600 hover:text-gray-900'
                 }`}
             >
               Sales
@@ -364,8 +464,8 @@ export default function InfoPortalPage() {
             <button
               onClick={() => setActiveTab('interactions')}
               className={`px-6 py-2 rounded-3xl font-medium transition-colors ${activeTab === 'interactions'
-                ? 'bg-[#2D8A4E] text-white'
-                : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-[#2D8A4E] text-white'
+                  : 'text-gray-600 hover:text-gray-900'
                 }`}
             >
               Interactions
@@ -380,14 +480,16 @@ export default function InfoPortalPage() {
                   {activeTab === 'sales' ? 'Sales' : 'Client Interactions'}
                 </h2>
                 <p className="text-sm text-gray-500">
-                  A descriptive body text comes here
+                  Manage and track all {activeTab === 'sales' ? 'sales' : 'interactions'}
                 </p>
               </div>
 
               <div className="flex gap-3">
                 <button
-                  onClick={handleBulkDelete} disabled={selectedRows.length === 0}
-                  className={`px-4 py-2 text-sm border rounded-lg ${selectedRows.length > 0 ? 'hover:bg-red-50 hover:border-red-300' : 'opacity-50 cursor-not-allowed'}`}>
+                  onClick={handleBulkDelete}
+                  disabled={selectedRows.length === 0}
+                  className={`px-4 py-2 text-sm border rounded-lg ${selectedRows.length > 0 ? 'hover:bg-red-50 hover:border-red-300' : 'opacity-50 cursor-not-allowed'
+                    }`}>
                   Delete {selectedRows.length > 0 && `(${selectedRows.length})`}
                 </button>
 
@@ -425,7 +527,7 @@ export default function InfoPortalPage() {
 
             {/* FILTERS PANEL */}
             {showFilters && (
-              <div className="my-4 p-4 bg-white rounded-lg border">
+              <div className="my-4 p-4 bg-gray-50 rounded-lg border">
                 <div className="grid grid-cols-4 gap-4">
                   <div>
                     <label className="block text-sm font-medium mb-1">Date From</label>
@@ -458,16 +560,43 @@ export default function InfoPortalPage() {
                     />
                   </div>
 
-                  {activeTab === 'sales' && (
+                  {activeTab === 'sales' ? (
+                    <>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Sales Rep</label>
+                        <input
+                          type="text"
+                          value={filters.salesRep}
+                          onChange={(e) => setFilters({ ...filters, salesRep: e.target.value })}
+                          placeholder="Search sales rep..."
+                          className="w-full px-3 py-2 border rounded-lg text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Product</label>
+                        <select
+                          value={filters.product}
+                          onChange={(e) => setFilters({ ...filters, product: e.target.value })}
+                          className="w-full px-3 py-2 border rounded-lg text-sm"
+                        >
+                          {productOptions.map(opt => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </>
+                  ) : (
                     <div>
-                      <label className="block text-sm font-medium mb-1">Sales Rep</label>
-                      <input
-                        type="text"
-                        value={filters.salesRep}
-                        onChange={(e) => setFilters({ ...filters, salesRep: e.target.value })}
-                        placeholder="Search sales rep..."
+                      <label className="block text-sm font-medium mb-1">Priority</label>
+                      <select
+                        value={filters.priority}
+                        onChange={(e) => setFilters({ ...filters, priority: e.target.value })}
                         className="w-full px-3 py-2 border rounded-lg text-sm"
-                      />
+                      >
+                        {priorityOptions.map(opt => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
                     </div>
                   )}
                 </div>
@@ -486,7 +615,6 @@ export default function InfoPortalPage() {
               </div>
             )}
 
-
             {/* TABLES */}
             {activeTab === 'sales' ? (
               <div className="overflow-x-auto">
@@ -503,55 +631,63 @@ export default function InfoPortalPage() {
                       </th>
                       <th className="py-3 px-4 text-left font-semibold text-gray-600">Client</th>
                       <th className="py-3 px-4 text-center font-semibold text-gray-600">Date</th>
-                      <th className="py-3 px-4 text-center font-semibold text-gray-600">Contact No</th>
                       <th className="py-3 px-4 text-center font-semibold text-gray-600">Sales Rep</th>
                       <th className="py-3 px-4 text-center font-semibold text-gray-600">Product</th>
                       <th className="py-3 px-4 text-center font-semibold text-gray-600">Company</th>
+                      <th className="py-3 px-4 text-center font-semibold text-gray-600">Scheme</th>
                       <th className="py-3 px-4 text-right font-semibold text-gray-600">Amount</th>
-                      <th className="py-3 px-4 text-left font-semibold text-gray-600">Remark</th>
+                      <th className="py-3 px-4 text-center font-semibold text-gray-600">Frequency</th>
                       <th className="py-3 px-4 text-center font-semibold text-gray-600">Actions</th>
                     </tr>
                   </thead>
 
                   <tbody>
-                    {filteredSales.map(row => (
-                      <tr key={row.id} className="border-b last:border-none hover:bg-gray-50">
-                        <td className="py-3 px-4">
-                          <input
-                            type="checkbox"
-                            checked={selectedRows.includes(row.id)}
-                            onChange={() => toggleRowSelection(row.id)}
-                            className="rounded"
-                          />
-                        </td>
-                        <td className="py-3 px-4 font-medium">{row.client}</td>
-                        <td className="py-3 px-4 text-center">{row.date}</td>
-                        <td className="py-3 px-4 text-center">{row.contactNo}</td>
-                        <td className="py-3 px-4 text-center">{row.salesRep}</td>
-                        <td className="py-3 px-4 text-center">{row.product}</td>
-                        <td className="py-3 px-4 text-center">{row.company}</td>
-                        <td className="py-3 px-4 text-right font-semibold">{row.amount}</td>
-                        <td className="py-3 px-4 text-left">{row.remark}</td>
-                        <td className="py-3 px-4">
-                          <div className="flex items-center justify-center gap-2">
-                            <button
-                              onClick={() => openEditModal(row)}
-                              className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                              title="Edit"
-                            >
-                              <Edit size={16} />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(row.id)}
-                              className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
-                              title="Delete"
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
+                    {filteredSales.length === 0 ? (
+                      <tr>
+                        <td colSpan={10} className="py-8 text-center text-gray-500">
+                          No sales found
                         </td>
                       </tr>
-                    ))}
+                    ) : (
+                      filteredSales.map(row => (
+                        <tr key={row.id} className="border-b last:border-none hover:bg-gray-50">
+                          <td className="py-3 px-4">
+                            <input
+                              type="checkbox"
+                              checked={selectedRows.includes(row.id)}
+                              onChange={() => toggleRowSelection(row.id)}
+                              className="rounded"
+                            />
+                          </td>
+                          <td className="py-3 px-4 font-medium">{row.client_name}</td>
+                          <td className="py-3 px-4 text-center">{row.date}</td>
+                          <td className="py-3 px-4 text-center">{row.sales_rep_name}</td>
+                          <td className="py-3 px-4 text-center">{row.product_display}</td>
+                          <td className="py-3 px-4 text-center">{row.company}</td>
+                          <td className="py-3 px-4 text-center">{row.scheme}</td>
+                          <td className="py-3 px-4 text-right font-semibold">{formatAmount(row.amount)}</td>
+                          <td className="py-3 px-4 text-center">{row.frequency_display}</td>
+                          <td className="py-3 px-4">
+                            <div className="flex items-center justify-center gap-2">
+                              <button
+                                onClick={() => openEditModal(row)}
+                                className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                title="Edit"
+                              >
+                                <Edit size={16} />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(row.id)}
+                                className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
+                                title="Delete"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -569,10 +705,11 @@ export default function InfoPortalPage() {
                         />
                       </th>
                       <th className="py-3 px-4 text-left font-semibold text-gray-600">Client</th>
+                      <th className="py-3 px-4 text-center font-semibold text-gray-600">Contact</th>
                       <th className="py-3 px-4 text-center font-semibold text-gray-600">Date</th>
-                      <th className="py-3 px-4 text-center font-semibold text-gray-600">Contact No</th>
-                      <th className="py-3 px-4 text-left font-semibold text-gray-600">Discussion Summary</th>
-                      <th className="py-3 px-4 text-center font-semibold text-gray-600">Call Status</th>
+                      <th className="py-3 px-4 text-center font-semibold text-gray-600">Representative</th>
+                      <th className="py-3 px-4 text-left font-semibold text-gray-600">Discussion Notes</th>
+                      <th className="py-3 px-4 text-center font-semibold text-gray-600">Priority</th>
                       <th className="py-3 px-4 text-center font-semibold text-gray-600">Follow-up Date</th>
                       <th className="py-3 px-4 text-center font-semibold text-gray-600">Follow-up Time</th>
                       <th className="py-3 px-4 text-center font-semibold text-gray-600">Actions</th>
@@ -580,43 +717,59 @@ export default function InfoPortalPage() {
                   </thead>
 
                   <tbody>
-                    {filteredInteractions.map(row => (
-                      <tr key={row.id} className="border-b last:border-none hover:bg-gray-50">
-                        <td className="py-3 px-4">
-                          <input
-                            type="checkbox"
-                            checked={selectedRows.includes(row.id)}
-                            onChange={() => toggleRowSelection(row.id)}
-                            className="rounded"
-                          />
-                        </td>
-                        <td className="py-3 px-4 font-medium">{row.client}</td>
-                        <td className="py-3 px-4 text-center">{row.date}</td>
-                        <td className="py-3 px-4 text-center">{row.contactNo}</td>
-                        <td className="py-3 px-4 text-left">{row.summary}</td>
-                        <td className="py-3 px-4 text-center">{row.callStatus}</td>
-                        <td className="py-3 px-4 text-center">{row.followUpDate}</td>
-                        <td className="py-3 px-4 text-center">{row.followUpTime}</td>
-                        <td className="py-3 px-4">
-                          <div className="flex items-center justify-center gap-2">
-                            <button
-                              onClick={() => openEditModal(row)}
-                              className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                              title="Edit"
-                            >
-                              <Edit size={16} />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(row.id)}
-                              className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
-                              title="Delete"
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
+                    {filteredInteractions.length === 0 ? (
+                      <tr>
+                        <td colSpan={10} className="py-8 text-center text-gray-500">
+                          No interactions found
                         </td>
                       </tr>
-                    ))}
+                    ) : (
+                      filteredInteractions.map(row => (
+                        <tr key={row.id} className="border-b last:border-none hover:bg-gray-50">
+                          <td className="py-3 px-4">
+                            <input
+                              type="checkbox"
+                              checked={selectedRows.includes(row.id)}
+                              onChange={() => toggleRowSelection(row.id)}
+                              className="rounded"
+                            />
+                          </td>
+                          <td className="py-3 px-4 font-medium">{row.client_name}</td>
+                          <td className="py-3 px-4 text-center">{row.client_contact}</td>
+                          <td className="py-3 px-4 text-center">{row.date}</td>
+                          <td className="py-3 px-4 text-center">{row.employee_name}</td>
+                          <td className="py-3 px-4 text-left max-w-xs truncate">{row.discussion_notes}</td>
+                          <td className="py-3 px-4 text-center">
+                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${row.priority === 'HIGH' ? 'bg-red-100 text-red-700' :
+                                row.priority === 'MEDIUM' ? 'bg-yellow-100 text-yellow-700' :
+                                  'bg-green-100 text-green-700'
+                              }`}>
+                              {row.priority_display}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-center">{row.follow_up_date}</td>
+                          <td className="py-3 px-4 text-center">{row.follow_up_time}</td>
+                          <td className="py-3 px-4">
+                            <div className="flex items-center justify-center gap-2">
+                              <button
+                                onClick={() => openEditModal(row)}
+                                className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                title="Edit"
+                              >
+                                <Edit size={16} />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(row.id)}
+                                className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
+                                title="Delete"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -625,7 +778,7 @@ export default function InfoPortalPage() {
         </div>
       </div>
 
-      {/* ✅ MODALS — THIS IS THE CORRECT PLACE */}
+      {/* MODALS */}
       {activeTab === 'sales' ? (
         <>
           <AddSalesModal
@@ -642,19 +795,21 @@ export default function InfoPortalPage() {
               }}
               onSave={handleEdit}
               initialData={{
-                client: (editingRow as SalesRow).client,
+                id: (editingRow as SalesRow).id,
                 date: (editingRow as SalesRow).date,
-                contactNo: (editingRow as SalesRow).contactNo,
-                employeeId: (editingRow as SalesRow).salesRepId,
+                client_name: (editingRow as SalesRow).client_name,
+                sales_rep: (editingRow as SalesRow).sales_rep_id,
+                product: (editingRow as SalesRow).product,
                 company: (editingRow as SalesRow).company,
+                scheme: (editingRow as SalesRow).scheme,
                 amount: (editingRow as SalesRow).amount,
-                remark: (editingRow as SalesRow).remark,
-                product: (editingRow as SalesRow).product, // Fixed
-                frequency: (editingRow as SalesRow).frequency // Fixed
+                frequency: (editingRow as SalesRow).frequency,
+                remarks: (editingRow as SalesRow).remarks,
               }}
             />
           )}
-        </>) : (
+        </>
+      ) : (
         <>
           <AddInteractionModal
             isOpen={showModal}
@@ -670,16 +825,20 @@ export default function InfoPortalPage() {
               }}
               onSave={handleEdit}
               initialData={{
-                client: (editingRow as InteractionRow).client,
+                id: (editingRow as InteractionRow).id,
                 date: (editingRow as InteractionRow).date,
-                contactNo: (editingRow as InteractionRow).contactNo,
-                employeeId: (editingRow as InteractionRow).employeeId,
-                summary: (editingRow as InteractionRow).summary,
-                followUpDate: (editingRow as InteractionRow).followUpDate,
+                client_name: (editingRow as InteractionRow).client_name,
+                client_contact: (editingRow as InteractionRow).client_contact,
+                employee: (editingRow as InteractionRow).employee_id,
+                discussion_notes: (editingRow as InteractionRow).discussion_notes,
+                priority: (editingRow as InteractionRow).priority,
+                follow_up_date: (editingRow as InteractionRow).follow_up_date,
+                follow_up_time: (editingRow as InteractionRow).follow_up_time,
               }}
             />
           )}
-        </>)}
+        </>
+      )}
     </div>
   );
 }

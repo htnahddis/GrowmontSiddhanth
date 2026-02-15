@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 
 interface User {
     id: number;
@@ -14,7 +14,7 @@ interface User {
 interface AuthContextType {
     user: User | null;
     token: string | null;
-    login: (userData: User, token: string) => void;
+    login: (userData: User, accessToken: string, refreshToken: string) => void;
     logout: () => void;
     isLoading: boolean;
 }
@@ -26,38 +26,79 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [token, setToken] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const router = useRouter();
+    const pathname = usePathname();
 
     useEffect(() => {
         // Check local storage on load
         const storedUser = localStorage.getItem('user');
         const storedToken = localStorage.getItem('accessToken');
+        
         if (storedUser && storedToken) {
             try {
-                setUser(JSON.parse(storedUser));
+                const parsedUser = JSON.parse(storedUser);
+                setUser(parsedUser);
                 setToken(storedToken);
+                console.log('User restored from localStorage:', parsedUser);
             } catch (e) {
-                console.error("Failed to parse user from local storage");
+                console.error("Failed to parse user from local storage", e);
                 localStorage.removeItem('user');
                 localStorage.removeItem('accessToken');
+                localStorage.removeItem('refreshToken');
             }
         }
         setIsLoading(false);
     }, []);
 
-    const login = (userData: User, accessToken: string) => {
+    const login = (userData: User, accessToken: string, refreshToken: string) => {
+        console.log('Login called with:', userData);
+        
         setUser(userData);
         setToken(accessToken);
+        
         localStorage.setItem('user', JSON.stringify(userData));
         localStorage.setItem('accessToken', accessToken);
-        router.push('/dashboard');
+        localStorage.setItem('refreshToken', refreshToken);
+        
+        console.log('User data saved to localStorage');
+        
+        // Use window.location for a hard redirect to ensure state updates
+        window.location.href = '/dashboard';
     };
 
-    const logout = () => {
+    const logout = async () => {
+        console.log('Logout called');
+        
+        const refreshToken = localStorage.getItem('refreshToken');
+        
+        // Call logout API
+        if (refreshToken) {
+            try {
+                await fetch('http://127.0.0.1:8000/api/auth/logout/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({ refresh: refreshToken }),
+                });
+            } catch (error) {
+                console.error('Logout API error:', error);
+            }
+        }
+        
+        // Clear state
         setUser(null);
         setToken(null);
+        
+        // Clear localStorage
         localStorage.removeItem('user');
         localStorage.removeItem('accessToken');
-        router.push('/login');
+        localStorage.removeItem('refreshToken');
+        
+        console.log('User logged out, redirecting to /');
+        
+        // Redirect to home page (/)
+        window.location.href = '/';
     };
 
     return (

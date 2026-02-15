@@ -1,197 +1,154 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useAuth } from "@/context/AuthContext";
 import Sidebar from "@/components/Sidebar";
 import Navbar from "@/components/Navbar";
+import toast from "react-hot-toast";
+import { api, endpoints } from "@/utils/api";
 import AddSalesModal from "@/components/AddSalesModal";
 
-interface Assignee {
-  name: string;
-  avatar: string;
-}
-
-interface Client {
-  id: string;
-  name: string;
+interface Sale {
+  id: number;
   date: string;
-  spentTime: string;
-  assignee: Assignee;
-  priority: string;
-  status: string;
-  category: string;
-}
-
-interface Category {
-  id: string;
-  name: string;
-  label: string;
+  client_name: string;
+  sales_rep: number;
+  sales_rep_name: string;
+  product: string;
+  product_display: string;
+  company: string;
+  scheme: string;
+  amount: string;
+  frequency: string;
+  frequency_display: string;
+  remarks: string;
 }
 
 const SalesPage = () => {
-  const { token } = useAuth();
-  const [selectedCategory, setSelectedCategory] = useState<string>("insurance");
-  const [salesFromDB, setSalesFromDB] = useState<Client[]>([]);
+  const [sales, setSales] = useState<Sale[]>([]);
+  const [filteredSales, setFilteredSales] = useState<Sale[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [selectedProduct, setSelectedProduct] = useState<string>("ALL");
+  const [editingSale, setEditingSale] = useState<any>(null);
 
-  // Hardcoded categories as they are static UI elements
-  const categories: Category[] = [
-    { id: "insurance", name: "Insurance", label: "Category" },
-    { id: "mutualfunds", name: "Mutual Funds", label: "Category" },
-    { id: "equity", name: "Equity", label: "Category" },
+  const productCategories = [
+    { id: "ALL", name: "All Products" },
+    { id: "MF", name: "Mutual Funds" },
+    { id: "HI", name: "Health Insurance" },
+    { id: "GI", name: "General Insurance" },
+    { id: "LI", name: "Life Insurance" },
+    { id: "NCD", name: "NCDs" },
+    { id: "MLD", name: "MLDs" },
+    { id: "BOND", name: "Bonds" },
+    { id: "CFD", name: "Corporate FDs" },
+    { id: "AIF", name: "AIFs" },
+    { id: "PMS", name: "PMS" },
   ];
 
-  /* ================= FETCH SALES FROM DJANGO ================= */
   useEffect(() => {
-    if (!token) return;
-
-    const fetchSales = async () => {
-      try {
-        const headers = { 'Authorization': `Bearer ${token}` };
-        const res = await fetch("http://127.0.0.1:8000/api/sales/", { headers });
-        if (!res.ok) throw new Error("Failed to fetch sales");
-
-        const apiData = await res.json();
-
-        const mappedData: Client[] = apiData.map((sale: any) => ({
-          id: String(sale.id),
-          name: sale.client?.name ?? "Unknown Client",
-          date: sale.date,
-          spentTime:
-            sale.frequency === "M"
-              ? "Monthly"
-              : sale.frequency === "Q"
-                ? "Quarterly"
-                : sale.frequency === "Y"
-                  ? "Yearly"
-                  : "--",
-
-          assignee: {
-            name: sale.sales_rep?.name ?? "N/A",
-            avatar: sale.sales_rep?.avatar ?? "/avatar.png",
-          },
-          priority: "Medium", // not in model → safe default
-          status: "In Progress", // not in model → safe default
-          category: (sale.product === "HI" || sale.product === "LI" || sale.product === "GI") ? "insurance" : "mutualfunds",
-        }));
-
-        setSalesFromDB(mappedData);
-      } catch (err) {
-        console.error("Sales API error:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchSales();
-  }, [token]);
+  }, []);
 
-  const handleSaveSale = async (formData: any) => {
+  useEffect(() => {
+    filterSales();
+  }, [sales, selectedProduct]);
+
+  const fetchSales = async () => {
     try {
-      const payload = {
-        // Backend creates client by name
-        client_name: formData.client,
-        contactNo: formData.contactNo,
-
-        // Sale model required fields
-        sales_rep: (() => {
-          const repId = parseInt(formData.employeeId);
-          return isNaN(repId) ? 1 : repId; // fallback to ID 1 if invalid
-        })(),
-
-        date: formData.date,
-        product: "HI", // Health Insurance
-        company: formData.company,
-        scheme: formData.company + " Scheme", // auto-generate
-        amount: parseFloat(formData.amount) || 0,
-        frequency: "M", // Monthly
-        remarks: formData.remark || "",
-      };
-
-      console.log("Final payload to Django:", payload);
-
-      const res = await fetch("http://127.0.0.1:8000/api/sales/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        const errorText = await res.text();
-
-        if (errorText.includes("sales_rep")) {
-          alert("Employee ID not found. Use ID 1 or check /admin/employees");
-        } else if (errorText.includes("client")) {
-          alert("Client issue. Check client name");
-        } else {
-          alert("Server error: " + errorText);
-        }
-        return;
-      }
-
-      const newSale = await res.json();
-
-      // Your exact mapping logic
-      const mappedSale: Client = {
-        id: String(newSale.id),
-        name: newSale.client.name,
-        date: newSale.date,
-        spentTime:
-          newSale.frequency === "M"
-            ? "Monthly"
-            : newSale.frequency === "Q"
-              ? "Quarterly"
-              : "Yearly",
-        assignee: {
-          name: newSale.sales_rep.name,
-          avatar: newSale.sales_rep.avatar || "/avatar.png",
-        },
-        priority: "Medium",
-        status: "In Progress",
-        category: newSale.product === "HI" ? "insurance" : "mutualfunds",
-      };
-
-      setSalesFromDB((prev) => [mappedSale, ...prev]);
-    } catch (error: any) {
-      console.error("Error:", error.message);
-      alert("Failed: " + error.message);
+      setLoading(true);
+      const data = await api.get(endpoints.sales);
+      console.log('Sales loaded:', data);
+      setSales(data);
+      toast.success(`Loaded ${data.length} sales`);
+    } catch (error) {
+      console.error('Failed to load sales:', error);
+      toast.error("Failed to load sales");
+    } finally {
+      setLoading(false);
     }
   };
 
-  /* ================= DB DATA ONLY ================= */
-  const clientsToShow = salesFromDB;
-
-  const filteredClients = clientsToShow.filter(
-    (client) => client.category === selectedCategory
-  );
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority.toLowerCase()) {
-      case "high":
-        return "text-red-500";
-      case "medium":
-        return "text-yellow-500";
-      case "low":
-        return "text-green-500";
-      default:
-        return "text-gray-500";
+  const filterSales = () => {
+    if (selectedProduct === "ALL") {
+      setFilteredSales(sales);
+    } else {
+      setFilteredSales(sales.filter(s => s.product === selectedProduct));
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "done":
-        return "bg-green-100 text-green-700";
-      case "in progress":
-        return "bg-blue-100 text-blue-700";
-      case "to do":
-        return "bg-gray-100 text-gray-700";
-      case "in review":
-        return "bg-purple-100 text-purple-700";
-      default:
-        return "bg-gray-100 text-gray-700";
+  const handleEdit = (sale: Sale) => {
+    setEditingSale({
+      id: sale.id,
+      date: sale.date,
+      client_name: sale.client_name,
+      sales_rep: sale.sales_rep,
+      product: sale.product,
+      company: sale.company,
+      scheme: sale.scheme,
+      amount: sale.amount,
+      frequency: sale.frequency,
+      remarks: sale.remarks,
+    });
+    setShowModal(true);
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this sale?')) {
+      return;
     }
+
+    try {
+      await api.delete(endpoints.deleteSale(id));
+      toast.success('Sale deleted successfully');
+      fetchSales();
+    } catch (error) {
+      console.error('Failed to delete sale:', error);
+      toast.error('Failed to delete sale');
+    }
+  };
+
+  const handleSaveSale = () => {
+    setShowModal(false);
+    setEditingSale(null);
+    fetchSales();
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setEditingSale(null);
+  };
+
+  const formatAmount = (amount: string) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 0,
+    }).format(parseFloat(amount));
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-IN', { 
+      day: '2-digit', 
+      month: 'short', 
+      year: 'numeric' 
+    });
+  };
+
+  const getProductBadgeColor = (product: string) => {
+    const colors: { [key: string]: string } = {
+      'MF': 'bg-blue-100 text-blue-700 border-blue-200',
+      'HI': 'bg-green-100 text-green-700 border-green-200',
+      'GI': 'bg-purple-100 text-purple-700 border-purple-200',
+      'LI': 'bg-indigo-100 text-indigo-700 border-indigo-200',
+      'NCD': 'bg-yellow-100 text-yellow-700 border-yellow-200',
+      'MLD': 'bg-pink-100 text-pink-700 border-pink-200',
+      'BOND': 'bg-orange-100 text-orange-700 border-orange-200',
+      'CFD': 'bg-teal-100 text-teal-700 border-teal-200',
+      'AIF': 'bg-cyan-100 text-cyan-700 border-cyan-200',
+      'PMS': 'bg-violet-100 text-violet-700 border-violet-200',
+    };
+    return colors[product] || 'bg-gray-100 text-gray-700 border-gray-200';
   };
 
   return (
@@ -203,38 +160,43 @@ const SalesPage = () => {
         <main className="flex-1 overflow-y-auto">
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-3xl font-bold text-[#00337C]">Sales</h1>
+
             <button
               onClick={() => setShowModal(true)}
               className="bg-[#2D8A4E] hover:bg-[#236b3d] transition-colors text-white px-4 py-2 rounded-lg flex items-center gap-2 cursor-pointer font-medium"
             >
               <span className="text-lg">+</span>
-              Add Sales
+              Add Sale
             </button>
           </div>
 
           <div className="grid grid-cols-12 gap-6">
-            {/* LEFT PANEL */}
+            {/* Left Panel - Product Filter */}
             <div className="col-span-3">
               <div className="bg-white rounded-lg shadow-sm p-4">
                 <h2 className="font-semibold text-gray-900 mb-4">
-                  Current Sales
+                  Filter by Product
                 </h2>
 
                 <div className="space-y-2">
-                  {categories.map((category) => (
+                  {productCategories.map((category) => (
                     <div
                       key={category.id}
-                      onClick={() => setSelectedCategory(category.id)}
-                      className={`cursor-pointer p-3 rounded-lg transition ${selectedCategory === category.id
-                        ? "bg-[#00337C]/11 border-l-4 border-[#00337C]"
-                        : "hover:bg-gray-50"
-                        }`}
+                      onClick={() => setSelectedProduct(category.id)}
+                      className={`cursor-pointer p-3 rounded-lg transition ${
+                        selectedProduct === category.id
+                          ? "bg-[#00337C]/11 border-l-4 border-[#00337C]"
+                          : "hover:bg-gray-50"
+                      }`}
                     >
-                      <p className="text-xs text-gray-500 mb-1">
-                        {category.label}
-                      </p>
                       <p className="font-medium text-gray-900">
                         {category.name}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {category.id === 'ALL' 
+                          ? sales.length 
+                          : sales.filter(s => s.product === category.id).length
+                        } sales
                       </p>
                     </div>
                   ))}
@@ -242,91 +204,155 @@ const SalesPage = () => {
               </div>
             </div>
 
-            {/* RIGHT PANEL */}
+            {/* Right Panel - Sales List */}
             <div className="col-span-9">
               <div className="bg-white rounded-lg shadow-sm p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-6">
-                  Sales Overview
-                </h2>
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    Sales Overview
+                  </h2>
+                  <span className="text-sm text-gray-500">
+                    Showing {filteredSales.length} of {sales.length} sales
+                  </span>
+                </div>
 
-                <div className="bg-[#F4F9FD] rounded-lg p-4">
-                  <h3 className="text-sm font-semibold text-gray-700 mb-4">
-                    All Sales
-                  </h3>
-
-                  {loading && (
-                    <p className="text-sm text-gray-500">Loading sales...</p>
-                  )}
-
-                  {!loading && filteredClients.length === 0 && (
-                    <p className="text-sm text-gray-500">No sales found.</p>
-                  )}
-
+                {loading ? (
+                  <div className="text-center py-12">
+                    <div className="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-[#00337C]"></div>
+                    <p className="mt-4 text-gray-600">Loading sales...</p>
+                  </div>
+                ) : filteredSales.length === 0 ? (
+                  <div className="text-center py-12">
+                    <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p className="mt-4 text-gray-500">No sales found</p>
+                    <button
+                      onClick={() => setShowModal(true)}
+                      className="mt-4 text-[#2D8A4E] hover:underline font-medium"
+                    >
+                      Add your first sale
+                    </button>
+                  </div>
+                ) : (
                   <div className="space-y-3">
-                    {filteredClients.map((client) => (
+                    {filteredSales.map((sale) => (
                       <div
-                        key={client.id}
-                        className="bg-white p-4 rounded-lg flex items-center justify-between hover:shadow-md transition"
+                        key={sale.id}
+                        className="bg-[#F4F9FD] p-4 rounded-lg hover:shadow-md transition border border-gray-100"
                       >
-                        <div className="flex-1">
-                          <p className="text-xs text-gray-500 mb-1">Name</p>
-                          <p className="font-medium text-gray-900">
-                            {client.name}
-                          </p>
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 grid grid-cols-6 gap-4">
+                            
+                            {/* Date */}
+                            <div>
+                              <p className="text-xs text-gray-500 mb-1">Date</p>
+                              <p className="text-sm font-medium text-gray-900">
+                                {formatDate(sale.date)}
+                              </p>
+                            </div>
+
+                            {/* Client */}
+                            <div>
+                              <p className="text-xs text-gray-500 mb-1">Client</p>
+                              <p className="text-sm font-medium text-gray-900">
+                                {sale.client_name}
+                              </p>
+                            </div>
+
+                            {/* Product */}
+                            <div>
+                              <p className="text-xs text-gray-500 mb-1">Product</p>
+                              <span className={`inline-flex px-2 py-1 rounded-full text-xs font-semibold border ${getProductBadgeColor(sale.product)}`}>
+                                {sale.product_display}
+                              </span>
+                            </div>
+
+                            {/* Amount */}
+                            <div>
+                              <p className="text-xs text-gray-500 mb-1">Amount</p>
+                              <p className="text-sm font-bold text-gray-900">
+                                {formatAmount(sale.amount)}
+                              </p>
+                            </div>
+
+                            {/* Frequency */}
+                            <div>
+                              <p className="text-xs text-gray-500 mb-1">Frequency</p>
+                              <p className="text-sm text-gray-700">
+                                {sale.frequency_display}
+                              </p>
+                            </div>
+
+                            {/* Sales Rep */}
+                            <div>
+                              <p className="text-xs text-gray-500 mb-1">Sales Rep</p>
+                              <p className="text-sm font-medium text-gray-900">
+                                {sale.sales_rep_name}
+                              </p>
+                            </div>
+
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className="flex items-center gap-2 ml-4">
+                            <button
+                              onClick={() => handleEdit(sale)}
+                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                              title="Edit"
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => handleDelete(sale.id)}
+                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                              title="Delete"
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </div>
                         </div>
 
-                        <div className="flex-1">
-                          <p className="text-xs text-gray-500 mb-1">Date</p>
-                          <p className="text-sm text-gray-700">{client.date}</p>
-                        </div>
-
-                        <div className="flex-1">
-                          <p className="text-xs text-gray-500 mb-1">
-                            Frequency
-                          </p>
-                          <p className="text-sm text-gray-700">
-                            {client.spentTime}
-                          </p>
-                        </div>
-
-                        <div className="flex-1">
-                          <p className="text-xs text-gray-500 mb-1">
-                            Assignee
-                          </p>
-                          <img
-                            src={client.assignee.avatar}
-                            alt={client.assignee.name}
-                            className="w-8 h-8 rounded-full"
-                          />
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                          <span
-                            className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                              client.status
-                            )}`}
-                          >
-                            {client.status}
-                          </span>
+                        {/* Company, Scheme, Remarks (Second Row) */}
+                        <div className="mt-3 pt-3 border-t border-gray-200 grid grid-cols-3 gap-4">
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">Company</p>
+                            <p className="text-sm text-gray-700">{sale.company}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">Scheme</p>
+                            <p className="text-sm text-gray-700">{sale.scheme}</p>
+                          </div>
+                          {sale.remarks && (
+                            <div>
+                              <p className="text-xs text-gray-500 mb-1">Remarks</p>
+                              <p className="text-sm text-gray-700 truncate">{sale.remarks}</p>
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))}
                   </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
         </main>
       </div>
 
+      {/* Modal */}
       <AddSalesModal
         isOpen={showModal}
-        onClose={() => setShowModal(false)}
+        onClose={handleCloseModal}
         onSave={handleSaveSale}
+        initialData={editingSale}
       />
     </div>
   );
 };
 
 export default SalesPage;
-
