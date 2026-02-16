@@ -7,7 +7,8 @@ import { api, endpoints } from '@/utils/api';
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  onSave: () => void;
+  // onSave: () => void;
+  onSave: (payload: any) => void;
   initialData?: any;
 }
 
