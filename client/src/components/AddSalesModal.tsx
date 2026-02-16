@@ -135,7 +135,7 @@ export default function AddSalesModal({ isOpen, onClose, onSave, initialData }: 
         toast.success('Sale created successfully!');
       }
       
-      onSave(); // Trigger parent to reload data
+      onSave(form); // Trigger parent to reload data
       onClose();
     } catch (error: any) {
       console.error('Error saving sale:', error);
