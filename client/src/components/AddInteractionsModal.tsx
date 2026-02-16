@@ -132,7 +132,7 @@ export default function AddInteractionModal({ isOpen, onClose, onSave, initialDa
         toast.success('Interaction created successfully!');
       }
       
-      onSave(); // Trigger parent to reload data
+      onSave(form); // Trigger parent to reload data
       onClose();
     } catch (error: any) {
       console.error('Error saving interaction:', error);
