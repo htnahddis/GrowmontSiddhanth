@@ -784,7 +784,7 @@ export default function InfoPortalPage() {
           <AddSalesModal
             isOpen={showModal}
             onClose={() => setShowModal(false)}
-            onSave={handleAdd}
+            onSave={(payload: any) => handleAdd(payload)}
           />
           {editingRow && (
             <AddSalesModal
@@ -793,7 +793,7 @@ export default function InfoPortalPage() {
                 setShowEditModal(false);
                 setEditingRow(null);
               }}
-              onSave={handleEdit}
+              onSave={(payload: any) => handleEdit(payload)}
               initialData={{
                 id: (editingRow as SalesRow).id,
                 date: (editingRow as SalesRow).date,
@@ -814,7 +814,7 @@ export default function InfoPortalPage() {
           <AddInteractionModal
             isOpen={showModal}
             onClose={() => setShowModal(false)}
-            onSave={handleAdd}
+            onSave={(payload: any) => handleAdd(payload)}
           />
           {editingRow && (
             <AddInteractionModal
@@ -823,7 +823,7 @@ export default function InfoPortalPage() {
                 setShowEditModal(false);
                 setEditingRow(null);
               }}
-              onSave={handleEdit}
+              onSave={(payload: any) => handleEdit(payload)}
               initialData={{
                 id: (editingRow as InteractionRow).id,
                 date: (editingRow as InteractionRow).date,
