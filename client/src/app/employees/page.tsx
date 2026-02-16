@@ -31,6 +31,8 @@ const EmployeesPage: React.FC = () => {
   const [currentUserRole, setCurrentUserRole] = useState<string>('');
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+
   useEffect(() => {
     if (!token) {
       router.push('/');
@@ -46,7 +48,7 @@ const EmployeesPage: React.FC = () => {
   const fetchEmployees = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://127.0.0.1:8000/api/employees/', {
+      const response = await fetch(`${API_URL}/api/employees/`, {
         headers: { 
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -94,7 +96,7 @@ const EmployeesPage: React.FC = () => {
     }
 
     try {
-      const response = await fetch(`http://127.0.0.1:8000/api/employees/${id}/delete/`, {
+      const response = await fetch(`${API_URL}/api/employees/${id}/delete/`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

@@ -79,6 +79,8 @@ const ProfilePage = () => {
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+
   useEffect(() => {
     if (!isLoading && !authUser) {
       router.push('/login');
@@ -98,7 +100,7 @@ const ProfilePage = () => {
       };
 
       // 1. Fetch User Data
-      const userRes = await fetch(`http://127.0.0.1:8000/api/employees/${userId}/`, { headers });
+      const userRes = await fetch(`${API_URL}/api/employees/${userId}/`, { headers });
       if (userRes.ok) {
         const userData = await userRes.json();
         setUser({
@@ -113,14 +115,14 @@ const ProfilePage = () => {
       }
 
       // 2. Fetch Interactions
-      const interactionsRes = await fetch(`http://127.0.0.1:8000/api/interactions/`, { headers });
+      const interactionsRes = await fetch(`${API_URL}/api/interactions/`, { headers });
       if (interactionsRes.ok) {
         const interactionsData = await interactionsRes.json();
         setInteractions(interactionsData);
       }
 
       // 3. Fetch Sales
-      const salesRes = await fetch(`http://127.0.0.1:8000/api/employees/${userId}/sales/`, { headers });
+      const salesRes = await fetch(`${API_URL}/api/employees/${userId}/sales/`, { headers });
       if (salesRes.ok) {
         const salesData = await salesRes.json();
         setProductSales(salesData.map((s: any) => ({
@@ -137,7 +139,7 @@ const ProfilePage = () => {
       }
 
       // 4. Fetch Reminders
-      const remindersRes = await fetch(`http://127.0.0.1:8000/api/reminders/`, { headers });
+      const remindersRes = await fetch(`${API_URL}/api/reminders/`, { headers });
       if (remindersRes.ok) {
         const remindersData = await remindersRes.json();
         setReminders(remindersData);
@@ -216,7 +218,7 @@ const ProfilePage = () => {
     try {
       const token = localStorage.getItem('accessToken');
       
-      const res = await fetch(`http://127.0.0.1:8000/api/reminders/${id}/delete/`, {
+      const res = await fetch(`${API_URL}/api/reminders/${id}/delete/`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -747,13 +749,16 @@ function ChangePasswordForm() {
   const [error, setError] = useState("");
   const { token } = useAuth();
 
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+
+
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage("");
     setError("");
 
     try {
-      const res = await fetch('http://127.0.0.1:8000/api/auth/password/change/', {
+      const res = await fetch(`${API_URL}/api/auth/password/change/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

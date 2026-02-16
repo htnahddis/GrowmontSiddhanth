@@ -42,6 +42,9 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
   const [showCredentials, setShowCredentials] = useState(false);
   const [credentials, setCredentials] = useState({ email: "", password: "" });
 
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+
+
   // Pre-fill form when editing
   useEffect(() => {
     if (initialData) {
@@ -124,7 +127,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
       let res;
       if (initialData) {
         // Update existing employee
-        res = await fetch(`http://127.0.0.1:8000/api/employees/${initialData.id}/update/`, {
+        res = await fetch(`${API_URL}/api/employees/${initialData.id}/update/`, {
           method: "PUT",
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -133,7 +136,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
         });
       } else {
         // Create new employee
-        res = await fetch("http://127.0.0.1:8000/api/employees/", {
+        res = await fetch(`${API_URL}/api/employees/`, {
           method: "POST",
           headers: {
             'Authorization': `Bearer ${token}`,

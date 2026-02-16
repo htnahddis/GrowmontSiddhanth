@@ -62,6 +62,8 @@ const EmployeeDetailPage: React.FC = () => {
   const [sales, setSales] = useState<Sale[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -81,7 +83,7 @@ const EmployeeDetailPage: React.FC = () => {
         };
 
         // 1. Fetch Employee Details
-        const empRes = await fetch(`http://127.0.0.1:8000/api/employees/${employeeId}/`, { headers });
+        const empRes = await fetch(`${API_URL}/api/employees/${employeeId}/`, { headers });
         if (empRes.status === 401) {
           toast.error('Session expired');
           router.push('/');
@@ -93,14 +95,14 @@ const EmployeeDetailPage: React.FC = () => {
         }
 
         // 2. Fetch interactions
-        const interactionsRes = await fetch(`http://127.0.0.1:8000/api/employees/${employeeId}/interactions/`, { headers });
+        const interactionsRes = await fetch(`${API_URL}/api/employees/${employeeId}/interactions/`, { headers });
         if (interactionsRes.ok) {
           const InteractionsData = await interactionsRes.json();
           setInteractions(InteractionsData);
         }
 
         // 3. Fetch Sales
-        const salesRes = await fetch(`http://127.0.0.1:8000/api/employees/${employeeId}/sales/`, { headers });
+        const salesRes = await fetch(`${API_URL}/api/employees/${employeeId}/sales/`, { headers });
         if (salesRes.ok) {
           const salesData = await salesRes.json();
           setSales(salesData);

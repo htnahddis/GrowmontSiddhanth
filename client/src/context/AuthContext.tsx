@@ -69,11 +69,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log('Logout called');
         
         const refreshToken = localStorage.getItem('refreshToken');
-        
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+
         // Call logout API
         if (refreshToken) {
             try {
-                await fetch('http://127.0.0.1:8000/api/auth/logout/', {
+                await fetch(`${API_URL}/api/auth/logout/`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

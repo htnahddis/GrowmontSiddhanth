@@ -50,6 +50,8 @@ const AddReminderModal: React.FC<AddReminderModalProps> = ({
   const [selectedDays, setSelectedDays] = useState<string[]>([]);
   const [repeatEveryDay, setRepeatEveryDay] = useState(false);
 
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+
   // Prefill form when editing
   useEffect(() => {
     if (editingReminder) {
@@ -94,8 +96,8 @@ const AddReminderModal: React.FC<AddReminderModalProps> = ({
 
       // Determine if creating or updating
       const url = editingReminder 
-        ? `http://127.0.0.1:8000/api/reminders/${editingReminder.id}/update/`
-        : 'http://127.0.0.1:8000/api/reminders/create/';
+        ? `${API_URL}/api/reminders/${editingReminder.id}/update/`
+        : `${API_URL}/api/reminders/create/`;
       
       const method = editingReminder ? 'PUT' : 'POST';
 

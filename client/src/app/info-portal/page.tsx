@@ -109,13 +109,16 @@ export default function InfoPortalPage() {
     return matchesSearch && matchesDateFrom && matchesDateTo && matchesClient && matchesPriority;
   });
 
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+
+
   /* ================= FETCH FROM DB ================= */
 
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
 
     // Fetch Sales
-    fetch('http://127.0.0.1:8000/api/sales/', {
+    fetch(`${API_URL}/api/sales/`, {
       headers: {
         'Authorization': `Bearer ${token}`
       }
@@ -155,7 +158,7 @@ export default function InfoPortalPage() {
       });
 
     // Fetch Interactions
-    fetch('http://127.0.0.1:8000/api/interactions/', {
+    fetch(`${API_URL}/api/interactions/`, {
       headers: {
         'Authorization': `Bearer ${token}`
       }
@@ -236,8 +239,8 @@ export default function InfoPortalPage() {
 
     const url =
       activeTab === 'sales'
-        ? 'http://127.0.0.1:8000/api/export/sales/filtered/'
-        : 'http://127.0.0.1:8000/api/export/interactions/filtered/';
+        ? `${API_URL}/api/export/sales/filtered/`
+        : `${API_URL}/api/export/interactions/filtered/`;
 
     try {
       const response = await fetch(url, {
@@ -280,8 +283,8 @@ export default function InfoPortalPage() {
 
     const url =
       activeTab === 'sales'
-        ? 'http://127.0.0.1:8000/api/import/sales/'
-        : 'http://127.0.0.1:8000/api/import/interactions/';
+        ? `${API_URL}/api/import/sales/`
+        : `${API_URL}/api/import/interactions/`;
 
     try {
       const token = localStorage.getItem('accessToken');
@@ -310,8 +313,8 @@ export default function InfoPortalPage() {
   const handleAdd = async (payload: any) => {
     const url =
       activeTab === 'sales'
-        ? 'http://127.0.0.1:8000/api/sales/create/'
-        : 'http://127.0.0.1:8000/api/interactions/create/';
+        ? `${API_URL}/api/sales/create/`
+        : `${API_URL}/api/interactions/create/`;
 
     const res = await fetch(url, {
       method: 'POST',
@@ -340,8 +343,8 @@ export default function InfoPortalPage() {
 
     const url =
       activeTab === 'sales'
-        ? `http://127.0.0.1:8000/api/sales/${editingRow.id}/update/`
-        : `http://127.0.0.1:8000/api/interactions/${editingRow.id}/update/`;
+        ? `${API_URL}/api/sales/${editingRow.id}/update/`
+        : `${API_URL}/api/interactions/${editingRow.id}/update/`;
 
     const res = await fetch(url, {
       method: 'PUT',
@@ -372,8 +375,8 @@ export default function InfoPortalPage() {
   const handleDelete = async (id: number) => {
     const url =
       activeTab === 'sales'
-        ? `http://127.0.0.1:8000/api/sales/${id}/delete/`
-        : `http://127.0.0.1:8000/api/interactions/${id}/delete/`;
+        ? `${API_URL}/api/sales/${id}/delete/`
+        : `${API_URL}/api/interactions/${id}/delete/`;
 
     const res = await fetch(url, {
       headers: {
