@@ -56,9 +56,22 @@ const LoginPage = () => {
         }),
       });
 
+      // Check if response is JSON
+      const contentType = res.headers.get('content-type');
+      const isJson = contentType?.includes('application/json');
+
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.detail || "Invalid credentials");
+        if (isJson) {
+          const errorData = await res.json();
+          throw new Error(errorData.detail || "Invalid credentials");
+        } else {
+          // Server returned HTML error page (500, etc.)
+          throw new Error(`Server error (${res.status}). Please check if the backend is running and properly configured.`);
+        }
+      }
+
+      if (!isJson) {
+        throw new Error("Server returned invalid response format. Backend may not be running.");
       }
 
       const data: LoginResponse = await res.json();
@@ -76,7 +89,11 @@ const LoginPage = () => {
       
     } catch (err) {
       console.error("Login error:", err);
-      setError(err instanceof Error ? err.message : "Invalid username or password");
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("An unexpected error occurred. Please try again.");
+      }
     } finally {
       setLoading(false);
     }

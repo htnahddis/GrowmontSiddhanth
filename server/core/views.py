@@ -43,11 +43,19 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         # Add custom user data
         try:
             employee = self.user.employee
+            # Safely get avatar URL
+            avatar_url = None
+            try:
+                if employee.avatar and employee.avatar.name:
+                    avatar_url = employee.avatar.url
+            except Exception:
+                avatar_url = None
+            
             data['user'] = {
                 'id': employee.id,
                 'name': employee.name,
                 'email': employee.email,
-                'avatar': employee.avatar.url if employee.avatar else None,
+                'avatar': avatar_url,
                 'role': employee.role,
             }
         except AttributeError:

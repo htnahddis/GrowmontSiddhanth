@@ -30,7 +30,18 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-fallback-key')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=False, cast=bool)
 
-ALLOWED_HOSTS = ["http//localhost:3000", "127.0.0.1:8000", "127.0.0.1", ".onrender.com", "https//growmont-crm-system.vercel.app"]
+# ALLOWED_HOSTS = ["http//localhost:3000", "127.0.0.1:8000", "127.0.0.1", ".onrender.com", "https//growmont-crm-system.vercel.app"]
+ALLOWED_HOSTS = [
+    "localhost",
+    "127.0.0.1",
+    "localhost:3000",
+    "localhost:8000",
+    "127.0.0.1:3000",
+    "127.0.0.1:8000",
+    "*.onrender.com",
+    "growmont-crm-system.vercel.app",
+]
+
 # ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=Csv())
 # CORS_ALLOW_ALL_ORIGINS = True
 
