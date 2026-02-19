@@ -38,7 +38,13 @@ from .serializers import (
 # ==================== CUSTOM JWT TOKEN ====================
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
-        data = super().validate(attrs)
+        try:
+            data = super().validate(attrs)
+        except Exception as e:
+            # Log validation error for debugging
+            print(f"Token validation error: {str(e)}")
+            print(f"Attempted username: {attrs.get('username', 'N/A')}")
+            raise
         
         # Add custom user data
         try:

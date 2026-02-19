@@ -63,12 +63,15 @@ const LoginPage = () => {
       if (!res.ok) {
         if (isJson) {
           const errorData = await res.json();
-          throw new Error(errorData.detail || "Invalid credentials");
+          console.error('Backend error details:', errorData);  // ← Add this
+          throw new Error(errorData.detail || errorData.error || "Invalid credentials");
         } else {
-          // Server returned HTML error page (500, etc.)
-          throw new Error(`Server error (${res.status}). Please check if the backend is running and properly configured.`);
+          const text = await res.text();  // ← Add this to see HTML error
+          console.error('Non-JSON response:', text);  // ← Add this
+          throw new Error(`Server error (${res.status}). Check backend logs.`);
         }
       }
+
 
       if (!isJson) {
         throw new Error("Server returned invalid response format. Backend may not be running.");
