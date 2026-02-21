@@ -21,8 +21,8 @@ def test_connection():
             # Test basic query
             cursor.execute("SELECT version();")
             version = cursor.fetchone()[0]
-            print("✅ Connection successful!")
-            print(f"📊 PostgreSQL version: {version}\n")
+            print(" Connection successful!")
+            print(f"PostgreSQL version: {version}\n")
             
             # Check if tables exist
             cursor.execute("""
@@ -40,15 +40,15 @@ def test_connection():
                     count = cursor.fetchone()[0]
                     print(f"  ✓ {table[0]}: {count} rows")
             else:
-                print("⚠️  No tables found. Run: python manage.py migrate")
+                print("  No tables found. Run: python manage.py migrate")
             
             print("\n" + "="*50)
-            print("✅ Supabase is ready to use!")
+            print(" Supabase is ready to use!")
             print("="*50)
             return True
             
     except Exception as e:
-        print(f"❌ Connection failed: {e}\n")
+        print(f" Connection failed: {e}\n")
         print("Troubleshooting:")
         print("1. Check your .env file:")
         print("   DATABASE_URL=postgresql://postgres:[PASSWORD]@db.xxxxx.supabase.co:5432/postgres")
