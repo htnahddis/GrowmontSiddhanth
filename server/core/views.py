@@ -1077,7 +1077,7 @@ def employee_clients(request, id):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def employee_sales(request, id):
-    sales = Sale.objects.filter(sales_rep_id=id).select_related('sales_rep', 'client')
+    sales = Sale.objects.filter(sales_rep_id=id).select_related('sales_rep')  # Removed 'client'
     serializer = SaleSerializer(sales, many=True)
     return Response(serializer.data)
 
@@ -1144,11 +1144,11 @@ def sales_list(request):
     
     if hasattr(user, 'employee'):
         if user.employee.role == 'EMPLOYEE':
-            sales = Sale.objects.filter(sales_rep=user.employee).select_related('sales_rep', 'client')
+            sales = Sale.objects.filter(sales_rep=user.employee).select_related('sales_rep')
         else:
-            sales = Sale.objects.all().select_related('sales_rep', 'client')
+            sales = Sale.objects.all().select_related('sales_rep')
     else:
-        sales = Sale.objects.all().select_related('sales_rep', 'client')
+        sales = Sale.objects.all().select_related('sales_rep')
     
     serializer = SaleSerializer(sales, many=True)
     return Response(serializer.data)
@@ -1182,7 +1182,7 @@ def create_sale(request):
 @permission_classes([IsAuthenticated])
 def update_sale(request, pk):
     try:
-        sale = Sale.objects.select_related('sales_rep', 'client').get(id=pk)
+        sale = Sale.objects.select_related('sales_rep').get(id=pk)  # Removed 'client'
     except Sale.DoesNotExist:
         return Response({'error': 'Sale not found'}, status=404)
     
@@ -1230,11 +1230,11 @@ def interactions_list(request):
     
     if hasattr(user, 'employee'):
         if user.employee.role == 'EMPLOYEE':
-            interactions = Interaction.objects.filter(employee=user.employee).select_related('employee', 'client')
+            interactions = Interaction.objects.filter(employee=user.employee).select_related('employee')
         else:
-            interactions = Interaction.objects.all().select_related('employee', 'client')
+            interactions = Interaction.objects.all().select_related('employee')
     else:
-        interactions = Interaction.objects.all().select_related('employee', 'client')
+        interactions = Interaction.objects.all().select_related('employee')
     
     serializer = InteractionSerializer(interactions, many=True)
     return Response(serializer.data)
@@ -1284,7 +1284,7 @@ def update_interaction(request, pk):
     - ADMIN: Can update any
     """
     try:
-        interaction = Interaction.objects.select_related('employee', 'client').get(id=pk)
+        interaction = Interaction.objects.select_related('employee').get(id=pk)  # Removed 'client'
     except Interaction.DoesNotExist:
         return Response({'error': 'Interaction not found'}, status=404)
     
@@ -1434,13 +1434,12 @@ def delete_reminder(request, pk):
 def export_sales_excel(request):
     wb = openpyxl.Workbook()
     ws = wb.active
-    ws.append(['Client', 'Date', 'Contact', 'Sales Rep', 'Product', 'Company', 'Scheme', 'Amount', 'Frequency', 'Remarks'])
+    ws.append(['Client', 'Date', 'Sales Rep', 'Product', 'Company', 'Scheme', 'Amount', 'Frequency', 'Remarks'])
 
-    for s in Sale.objects.select_related('client', 'sales_rep').all():
+    for s in Sale.objects.select_related('sales_rep').all():
         ws.append([
-            s.client.name,
+            s.client_name,  # Direct field, not s.client.name
             s.date,
-            s.client.contact_number,
             s.sales_rep.name,
             s.get_product_display(),
             s.company,
@@ -1498,12 +1497,12 @@ def export_sales_excel_filtered(request):
 def export_interactions_excel(request):
     wb = openpyxl.Workbook()
     ws = wb.active
-    ws.append(['Client', 'Contact', 'Date', 'Employee', 'Discussion Notes', 'Priority', 'Follow-up Date', 'Follow-up Time'])
+    ws.append(['Client Name', 'Contact', 'Date', 'Employee', 'Discussion Notes', 'Priority', 'Follow-up Date', 'Follow-up Time'])
 
-    for i in Interaction.objects.select_related('client', 'employee').all():
+    for i in Interaction.objects.select_related('employee').all():
         ws.append([
-            i.client_name,
-            i.client_contact,
+            i.client_name,  # Direct field
+            i.client_contact,  # Direct field
             i.date,
             i.employee.name,
             i.discussion_notes,
