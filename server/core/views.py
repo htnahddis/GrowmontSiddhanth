@@ -1138,7 +1138,7 @@ def delete_employee(request, id):
 
 # ==================== SALES - OPTIMIZED ====================
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+# @permission_classes([IsAuthenticated])
 def sales_list(request):
     user = request.user
     
