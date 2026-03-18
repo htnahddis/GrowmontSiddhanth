@@ -146,6 +146,8 @@ const LoginPage = () => {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <input
+
+                suppressHydrationWarning
                 type="text"
                 name="username"
                 value={formData.username}
@@ -218,14 +220,7 @@ const LoginPage = () => {
             </button>
           </form>
 
-          <div className="mt-6 text-center">
-            <a
-              href="/forgot-password"
-              className="text-sm text-gray-600 hover:text-green-700 transition"
-            >
-              Forgot Password?
-            </a>
-          </div>
+          
         </div>
       </div>
     </div>

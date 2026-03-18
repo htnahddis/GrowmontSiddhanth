@@ -7,6 +7,7 @@ import Sidebar from '@/components/Sidebar';
 import Navbar from '@/components/Navbar';
 import toast from 'react-hot-toast';
 import { SaveIcon, Bell, Calendar, CircleDollarSign, Building2Icon, User2 } from 'lucide-react';
+import TodoWidget from '@/components/TodoWidgets';
 
 interface Sale {
   id: number;
@@ -254,67 +255,65 @@ const DashboardPage: React.FC = () => {
           <div className="space-y-6">
             
             {/* Regular Reminders */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-6 sticky top-6">
-              <div className='flex gap-2 mb-4'><Bell color='#00337C'/> <h2 className="text-xl font-semibold text-gray-900">
-                Reminders
-              </h2></div>
+            <div
+  className="bg-white rounded-2xl border border-gray-200 p-6 sticky top-6 cursor-pointer hover:shadow-lg transition-all duration-200 group"
+  onClick={() => router.push('/profile?tab=reminders')}
+>
+  <div className='flex gap-2 mb-4 group-hover:text-[#2D8A4E] transition-colors'>
+    <Bell color='#00337C'/> 
+    <h2 className="text-xl font-semibold text-gray-900">
+      Reminders
+    </h2>
+  </div>
 
-              {reminders.length === 0 ? (
-                <div className="text-center py-8">
-                  <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                  </svg>
-                  <p className="mt-2 text-gray-500 text-sm">No reminders</p>
-                </div>
-              ) : (
-                <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {reminders.map((reminder) => (
-                    <div
-                      key={reminder.id}
-                      className={`rounded-lg p-3 border ${getPriorityColor(reminder.priority)}`}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-sm">{reminder.event_name}</h4>
-                          <p className="text-xs text-gray-600 mt-1">
-                            {formatDate(reminder.date)} at {formatTime(reminder.time)}
-                          </p>
-                          {currentUser?.role === 'ADMIN' && reminder.employee_name && (
-                            <p className="text-xs text-gray-500 mt-1">👤 {reminder.employee_name}</p>
-                          )}
-                        </div>
-                        <span className="text-xs font-medium">
-                          {reminder.type === 'CORPORATE' ? <Building2Icon width={18}/> : <User2 width={18}/>}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+  {reminders.length === 0 ? (
+    <div className="text-center py-8">
+      <svg className="mx-auto h-12 w-12 text-gray-400 group-hover:text-gray-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+      </svg>
+      <p className="mt-2 text-gray-500 text-sm">No reminders</p>
+      <p className="text-xs text-gray-400 mt-1 group-hover:text-[#2D8A4E] transition-colors">
+        Click to manage reminders →
+      </p>
+    </div>
+  ) : (
+    <div className="space-y-3 max-h-96 overflow-y-auto">
+      {reminders.map((reminder) => (
+        <div
+          key={reminder.id}
+          className={`rounded-lg p-3 border ${getPriorityColor(reminder.priority)}`}
+        >
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <h4 className="font-semibold text-sm">{reminder.event_name}</h4>
+              <p className="text-xs text-gray-600 mt-1">
+                {formatDate(reminder.date)} at {formatTime(reminder.time)}
+              </p>
+              {currentUser?.role === 'ADMIN' && reminder.employee_name && (
+                <p className="text-xs text-gray-500 mt-1">👤 {reminder.employee_name}</p>
               )}
             </div>
+            <span className="text-xs font-medium">
+              {reminder.type === 'CORPORATE' ? <Building2Icon width={18}/> : <User2 width={18}/>}
+            </span>
+          </div>
+        </div>
+      ))}
+      {reminders.length > 0 && (
+        <div className="pt-2 mt-3 border-t border-gray-100">
+          <p className="text-xs text-gray-500 hover:text-[#2D8A4E] transition-colors">
+            {reminders.length} reminder{reminders.length !== 1 ? 's' : ''} • Click to manage →
+          </p>
+        </div>
+      )}
+    </div>
+  )}
+</div>
+
 
             {/* Sticky Notes */}
             <div className="bg-yellow-50 rounded-2xl border-2 border-yellow-200 p-6 sticky top-[28rem]">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-lg font-semibold text-yellow-900">Sticky Notes</h2>
-                <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                </svg>
-              </div>
-
-              <textarea
-                value={stickyNotes}
-                onChange={(e) => saveStickyNotes(e.target.value)}
-                placeholder="Type your notes here..."
-                className="w-full h-48 p-3 bg-yellow-50 border-2 border-yellow-300 rounded-lg focus:outline-none focus:border-yellow-400 resize-none text-gray-800 placeholder-yellow-600/50"
-                style={{ fontFamily: 'Comic Sans MS, cursive' }}
-              />
-              <div className='flex gap-2 mt-2 text-yellow-700'>
-              <SaveIcon width={18} height={18}/> 
-              <p className="text-xs text-yellow-700">
-                Auto-saved locally
-              </p>
-              </div>
+              <TodoWidget userId={currentUser?.id || 0} />
             </div>
           </div>
         </div>

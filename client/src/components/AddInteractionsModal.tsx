@@ -109,7 +109,7 @@ export default function AddInteractionModal({ isOpen, onClose, onSave, initialDa
 
   const handleSubmit = async () => {
     // Validation
-    if (!form.date || !form.client_name || !form.client_contact || !form.follow_up_date || !form.follow_up_time) {
+    if (!form.date || !form.client_name || !form.client_contact) {
       toast.error('Please fill all required fields');
       return;
     }
@@ -239,7 +239,7 @@ export default function AddInteractionModal({ isOpen, onClose, onSave, initialDa
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">
-                Follow-up Date <span className="text-red-500">*</span>
+                Follow-up Date 
               </label>
               <input
                 type="date"
@@ -247,12 +247,12 @@ export default function AddInteractionModal({ isOpen, onClose, onSave, initialDa
                 value={form.follow_up_date}
                 onChange={handleChange}
                 className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition"
-                required
+                
               />
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">
-                Follow-up Time <span className="text-red-500">*</span>
+                Follow-up Time 
               </label>
               <input
                 type="time"
@@ -260,7 +260,7 @@ export default function AddInteractionModal({ isOpen, onClose, onSave, initialDa
                 value={form.follow_up_time}
                 onChange={handleChange}
                 className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition"
-                required
+              
               />
             </div>
           </div>

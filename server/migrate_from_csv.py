@@ -57,10 +57,12 @@ def migrate_employees():
                     pass
 
             with transaction.atomic():
+               
                 emp, created = Employee.objects.update_or_create(
-                    email=row['email'],
+                    id=row['id'],
                     defaults={
                         'user': user,
+                        'email': row['email'],
                         'name': row['name'],
                         'mobile_no': row['mobile_no'],
                         'gender': row['gender'],
@@ -93,7 +95,7 @@ def migrate_clients():
     return client_map
 
 
-def migrate_sales(client_map):
+def migrate_sales():
     print("💰 Migrating sales...")
     with open('csv/core_sale.csv', newline='', encoding='utf-8') as f:
         reader = csv.DictReader(f)
@@ -101,22 +103,18 @@ def migrate_sales(client_map):
         errors = 0
         for row in reader:
             try:
-                client = client_map.get(row['client_id'])
                 sales_rep = Employee.objects.get(id=row['sales_rep_id'])
-                if not client:
-                    print(f"⚠️ Skipping sale: client_id {row['client_id']} not found")
-                    errors += 1
-                    continue
                 with transaction.atomic():
                     Sale.objects.update_or_create(
-                        client=client,
-                        date=row['date'],
-                        sales_rep=sales_rep,
-                        amount=row['amount'],
+                        id=row['id'],
                         defaults={
+                            'date': row['date'],
+                            'client_name': row['client_name'],
+                            'sales_rep': sales_rep,
                             'product': row['product'],
                             'company': row['company'],
                             'scheme': safe_get(row, 'scheme'),
+                            'amount': row['amount'],
                             'frequency': row['frequency'],
                             'remarks': safe_get(row, 'remarks'),
                         }
@@ -128,7 +126,7 @@ def migrate_sales(client_map):
     print(f"✅ Sales migrated: {count}, Errors: {errors}\n")
 
 
-def migrate_interactions(client_map):
+def migrate_interactions():
     print("📞 Migrating interactions...")
     with open('csv/core_interaction.csv', newline='', encoding='utf-8') as f:
         reader = csv.DictReader(f)
@@ -136,20 +134,19 @@ def migrate_interactions(client_map):
         errors = 0
         for row in reader:
             try:
-                client = client_map.get(row['client_id'])
                 employee = Employee.objects.get(id=row['employee_id'])
-                if not client:
-                    print(f"⚠️ Skipping interaction: client_id {row['client_id']} not found")
-                    errors += 1
-                    continue
                 with transaction.atomic():
                     Interaction.objects.update_or_create(
-                        client=client,
-                        employee=employee,
-                        date=row['date'],
+                        id=row['id'],
                         defaults={
+                            'date': row['date'],
+                            'client_name': row['client_name'],
+                            'client_contact': row['client_contact'],
+                            'employee': employee,
+                            'follow_up_date': row['follow_up_date'],
+                            'follow_up_time': row['follow_up_time'],
+                            'priority': row['priority'],
                             'discussion_notes': safe_get(row, 'discussion_notes'),
-                            'next_follow_up': row['next_follow_up'],
                         }
                     )
                     count += 1
@@ -167,8 +164,8 @@ def main():
     migrate_users()
     migrate_employees()
     client_map = migrate_clients()
-    migrate_sales(client_map)
-    migrate_interactions(client_map)
+    migrate_sales()
+    migrate_interactions()
 
     print("\n✅ Migration complete!\n")
     print("Users:", User.objects.count())
