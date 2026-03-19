@@ -1069,6 +1069,7 @@ export default function InfoPortalPage() {
       else setInteractions(prev => prev.filter(r => r.id !== id));
     } else toast.error('Delete failed');
   };
+  
 
   const handleBulkDelete = async () => {
     if (selectedRows.length === 0) { toast.error('No rows selected'); return; }
