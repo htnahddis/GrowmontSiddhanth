@@ -7,14 +7,17 @@ import os
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-fallback-key')
-DEBUG = config('DEBUG', default=False, cast=bool)
+# DEBUG = config('DEBUG', default=False, cast=bool)
+DEBUG = True
 
-# FIXED: Proper ALLOWED_HOSTS
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=Csv())
+# # FIXED: Proper ALLOWED_HOSTS
+# ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=Csv())
 
-# Ensure Render domain is always allowed
-if '.onrender.com' not in ALLOWED_HOSTS:
-    ALLOWED_HOSTS.append('.onrender.com')
+# # Ensure Render domain is always allowed
+# if '.onrender.com' not in ALLOWED_HOSTS:
+#     ALLOWED_HOSTS.append('.onrender.com')
+
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
 
 #Reminder
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -24,10 +27,16 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'student.siddhanthchapade@gmail.com'       # your sender email
 EMAIL_HOST_PASSWORD = 'yfmm vwqe kufb yomh'    # Gmail App Password (not your real password)
 DEFAULT_FROM_EMAIL = 'Growmont <student.siddhanthchapade@gmail.com>'
-CELERY_BROKER_URL = 'redis://localhost:6379/0'
-CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+
+# CELERY_BROKER_URL = 'redis://localhost:6379/0'
+# CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+CELERY_BROKER_URL = 'redis://redis:6379/0'
+CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
+
 CELERY_TIMEZONE = 'Asia/Kolkata'
 
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
 
 # INSTALLED_APPS (keep as is)
 INSTALLED_APPS = [
@@ -111,7 +120,7 @@ AUTH_PASSWORD_VALIDATORS = [
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379/1",
+        "LOCATION": "redis://redis:6379/1",
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
         }
@@ -155,14 +164,16 @@ CORS_ALLOW_HEADERS = [
 
 # Security settings for production
 if not DEBUG:
-    SECURE_SSL_REDIRECT = True
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
+    # SECURE_SSL_REDIRECT = True
+    SECURE_SSL_REDIRECT = False  # Disable for local testing, enable in production
+    SESSION_COOKIE_SECURE = False  # Disable for local testing, enable in production
+    CSRF_COOKIE_SECURE = False  # Disable for local testing, enable in production
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = 'DENY'
-    SECURE_HSTS_SECONDS = 31536000
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_PRELOAD = True
+
+    # SECURE_HSTS_SECONDS = 31536000
+    # SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    # SECURE_HSTS_PRELOAD = True
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
