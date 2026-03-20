@@ -18,7 +18,7 @@ DEBUG = True
 #     ALLOWED_HOSTS.append('.onrender.com')
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0', "yourdomain.com", "www.yourdomain.com"]
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+# SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 #Reminder
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -165,16 +165,16 @@ CORS_ALLOW_HEADERS = [
 
 # Security settings for production
 if not DEBUG:
-    SECURE_SSL_REDIRECT = True
-    # SECURE_SSL_REDIRECT = False  # Disable for local testing, enable in production
-    SESSION_COOKIE_SECURE = True  # Disable for local testing, enable in production
-    CSRF_COOKIE_SECURE = True  # Disable for local testing, enable in production
+    # SECURE_SSL_REDIRECT = True
+    SECURE_SSL_REDIRECT = False  # Disable for local testing, enable in production
+    SESSION_COOKIE_SECURE = False  # Disable for local testing, enable in production
+    CSRF_COOKIE_SECURE = False  # Disable for local testing, enable in production
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = 'DENY'
 
-    SECURE_HSTS_SECONDS = 31536000
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_PRELOAD = True
+    # SECURE_HSTS_SECONDS = 31536000
+    # SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    # SECURE_HSTS_PRELOAD = True
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
