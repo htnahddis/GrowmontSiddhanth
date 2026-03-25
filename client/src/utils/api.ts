@@ -1,5 +1,4 @@
-// utils/api.ts
-// Centralized API utility with authentication
+
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
 
@@ -7,10 +6,7 @@ interface FetchOptions extends RequestInit {
   requireAuth?: boolean;
 }
 
-/**
- * Authenticated fetch wrapper
- * Automatically adds JWT token to requests
- */
+
 export async function apiFetch(
   endpoint: string,
   options: FetchOptions = {}
@@ -230,28 +226,3 @@ export const endpoints = {
   importSales: '/api/import/sales/',
   importInteractions: '/api/import/interactions/',
 };
-
-/**
- * Usage Examples:
- * 
- * // Simple GET
- * const interactions = await api.get(endpoints.interactions);
- * 
- * // POST with data
- * const newSale = await api.post(endpoints.createSale, {
- *   client: 'ABC Corp',
- *   amount: 5000,
- *   // ...
- * });
- * 
- * // PUT update
- * await api.put(endpoints.updateSale(123), updatedData);
- * 
- * // DELETE
- * await api.delete(endpoints.deleteSale(123));
- * 
- * // File upload
- * const formData = new FormData();
- * formData.append('file', file);
- * await api.upload(endpoints.importSales, formData);
- */

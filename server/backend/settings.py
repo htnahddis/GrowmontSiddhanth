@@ -10,29 +10,22 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-fallback-key')
 # DEBUG = config('DEBUG', default=False, cast=bool)
 DEBUG = True
 
-# # FIXED: Proper ALLOWED_HOSTS
-# ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=Csv())
 
-# # Ensure Render domain is always allowed
-# if '.onrender.com' not in ALLOWED_HOSTS:
-#     ALLOWED_HOSTS.append('.onrender.com')
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0', "yourdomain.com", "www.yourdomain.com"]
-# SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 #Reminder
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'student.siddhanthchapade@gmail.com'       # your sender email
-EMAIL_HOST_PASSWORD = 'yfmm vwqe kufb yomh'    # Gmail App Password (not your real password)
-DEFAULT_FROM_EMAIL = 'Growmont <student.siddhanthchapade@gmail.com>'
+EMAIL_HOST_USER = config('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
+ 
+DEFAULT_FROM_EMAIL = config('EMAIL_HOST_USER')
 
-# CELERY_BROKER_URL = 'redis://localhost:6379/0'
-# CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
-CELERY_BROKER_URL = 'redis://redis:6379/0'
-CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
 
 CELERY_TIMEZONE = 'Asia/Kolkata'
 
