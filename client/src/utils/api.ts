@@ -1,6 +1,7 @@
 
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+// const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+const API_URL = "";
 
 interface FetchOptions extends RequestInit {
   requireAuth?: boolean;
@@ -67,7 +68,7 @@ export async function refreshAccessToken(): Promise<string | null> {
       return null;
     }
 
-    const response = await fetch(`${API_URL}/api/auth/refresh/`, {
+    const response = await fetch(`/api/auth/refresh/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -166,7 +167,7 @@ export const api = {
       headers.Authorization = `Bearer ${token}`;
     }
 
-    const response = await fetch(`${API_URL}${endpoint}`, {
+    const response = await fetch(endpoint, {
       method: 'POST',
       headers,
       body: formData,
