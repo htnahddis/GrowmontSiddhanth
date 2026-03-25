@@ -15,7 +15,8 @@ interface LoginResponse {
     role: 'ADMIN' | 'EMPLOYEE';
   };
 }
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+// const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+const API_URL = "";
 
 const LoginPage = () => {
   const router = useRouter();
@@ -45,7 +46,7 @@ const LoginPage = () => {
     try {
       console.log('Attempting login...');
       
-      const res = await fetch(`${API_URL}/api/auth/login/`, {
+      const res = await fetch(`/api/auth/login/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
