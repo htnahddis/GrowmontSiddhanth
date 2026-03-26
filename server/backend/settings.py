@@ -7,12 +7,11 @@ import os
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-fallback-key')
-# DEBUG = config('DEBUG', default=False, cast=bool)
-DEBUG = True
+DEBUG = False  # Set to False for production, True for local development
 
 
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0', "yourdomain.com", "www.yourdomain.com"]
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0', "work-crm.growmont.com", "www.work-crm.growmont.com", '172.105.36.70']
 
 #Reminder
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -137,11 +136,17 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 # CORS - FIXED
-CORS_ALLOWED_ORIGINS = config(
-    'CORS_ALLOWED_ORIGINS',
-    default='http://localhost:3000',
-    cast=lambda v: [s.strip() for s in v.split(',')]
-)
+# CORS_ALLOWED_ORIGINS = config(
+#     'CORS_ALLOWED_ORIGINS',
+#     default='http://localhost:3000',
+#     cast=lambda v: [s.strip() for s in v.split(',')]
+# )
+
+CORS_ALLOWED_ORIGINS = [
+    "https://work-crm.growmont.com",
+    "https://www.work-crm.growmont.com",
+    "http://localhost:3000",
+]
 
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = [
@@ -157,11 +162,12 @@ CORS_ALLOW_HEADERS = [
 ]
 
 # Security settings for production
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 if not DEBUG:
-    # SECURE_SSL_REDIRECT = True
-    SECURE_SSL_REDIRECT = False  # Disable for local testing, enable in production
-    SESSION_COOKIE_SECURE = False  # Disable for local testing, enable in production
-    CSRF_COOKIE_SECURE = False  # Disable for local testing, enable in production
+    SECURE_SSL_REDIRECT = True  # Disable for local testing, enable in production
+    SESSION_COOKIE_SECURE = True  # Disable for local testing, enable in production
+    CSRF_COOKIE_SECURE = True  # Disable for local testing, enable in production
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = 'DENY'
