@@ -42,8 +42,8 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
   const [showCredentials, setShowCredentials] = useState(false);
   const [credentials, setCredentials] = useState({ email: "", password: "" });
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
-
+  // const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+const API_URL = "";
 
   // Pre-fill form when editing
   useEffect(() => {
