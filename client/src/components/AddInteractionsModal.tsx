@@ -31,6 +31,12 @@ export default function AddInteractionModal({ isOpen, onClose, onSave, initialDa
     discussion_notes: '',
   });
 
+  const payload = {
+    ...form,
+    follow_up_date: form.follow_up_date || null,
+    follow_up_time: form.follow_up_time || null,
+  };
+
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -124,11 +130,11 @@ export default function AddInteractionModal({ isOpen, onClose, onSave, initialDa
     try {
       if (initialData?.id) {
         // Update existing interaction
-        await api.put(endpoints.updateInteraction(initialData.id), form);
+        await api.put(endpoints.updateInteraction(initialData.id), payload);
         toast.success('Interaction updated successfully!');
       } else {
         // Create new interaction
-        await api.post(endpoints.createInteraction, form);
+        await api.post(endpoints.createInteraction, payload);
         toast.success('Interaction created successfully!');
       }
       

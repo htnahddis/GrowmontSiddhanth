@@ -28,14 +28,12 @@ class ClientSerializer(serializers.ModelSerializer):
         model = Client
         fields = '__all__'
 
-
-
 # ============ UPDATED INTERACTION SERIALIZERS ============
 class InteractionCreateSerializer(serializers.ModelSerializer):
     
     follow_up_date = serializers.DateField(required=False, allow_null=True)
     follow_up_time = serializers.TimeField(required=False, allow_null=True)
-    
+
     class Meta:
         model = Interaction
         fields = [
@@ -61,31 +59,6 @@ class InteractionCreateSerializer(serializers.ModelSerializer):
                 })
 
         return data
-    
-# class InteractionCreateSerializer(serializers.ModelSerializer):
-#     """Serializer for creating interactions"""
-    
-#     class Meta:
-#         model = Interaction
-#         fields = [
-#             'date',
-#             'client_name',
-#             'client_contact',
-#             'employee',
-#             'follow_up_date',
-#             'follow_up_time',
-#             'priority',
-#             'discussion_notes',
-#         ]
-
-#     def validate(self, data):
-#         """Validate interaction data"""
-#         # Ensure follow-up date is not before interaction date
-#         if data['follow_up_date'] < data['date']:
-#             raise serializers.ValidationError({
-#                 'follow_up_date': 'Follow-up date cannot be before interaction date'
-#             })
-#         return data
 
 
 class InteractionSerializer(serializers.ModelSerializer):
@@ -158,7 +131,6 @@ class SaleSerializer(serializers.ModelSerializer):
 
 
 # In core/serializers.py
-
 class ReminderSerializer(serializers.ModelSerializer):
     employee_name = serializers.CharField(source='employee.name', read_only=True)
     

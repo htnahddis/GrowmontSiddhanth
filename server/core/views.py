@@ -1249,7 +1249,12 @@ def create_interaction(request):
     - ADMIN: Can assign to any employee
     """
     data = request.data.copy()
-    
+    # Convert empty strings to None
+    if data.get('follow_up_date') == '':
+        data['follow_up_date'] = None
+
+    if data.get('follow_up_time') == '':
+        data['follow_up_time'] = None
     # Determine which employee to assign
     if hasattr(request.user, 'employee'):
         if request.user.employee.role == 'EMPLOYEE':
@@ -1296,6 +1301,12 @@ def update_interaction(request, pk):
                 return Response({'error': 'Cannot edit other employees interactions'}, status=403)
     
     data = request.data.copy()
+    # Convert empty strings to None
+    if data.get('follow_up_date') == '':
+        data['follow_up_date'] = None
+
+    if data.get('follow_up_time') == '':
+        data['follow_up_time'] = None
     
     # Employees cannot change the assigned employee
     if hasattr(user, 'employee') and user.employee.role == 'EMPLOYEE':
