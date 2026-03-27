@@ -110,8 +110,10 @@ class Interaction(models.Model):
     employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='interactions')
     
     # Follow-up Details
-    follow_up_date = models.DateField()
-    follow_up_time = models.TimeField(default='10:00:00')
+    follow_up_date = models.DateField(null=True, blank=True)
+    follow_up_time = models.TimeField(null=True, blank=True, default='10:00:00')
+    # follow_up_date = models.DateField()
+    # follow_up_time = models.TimeField(default='10:00:00')
     
     # Priority
     priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='MEDIUM')
