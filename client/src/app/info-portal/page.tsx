@@ -105,7 +105,8 @@ export default function InfoPortalPage() {
     return matchesSearch && matchesDateFrom && matchesDateTo && matchesClient && matchesPriority;
   });
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+  // const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+const API_URL = "";
 
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
