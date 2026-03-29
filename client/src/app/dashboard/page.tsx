@@ -122,7 +122,17 @@ const API_URL = "";
     }).format(parseFloat(amount));
   };
 
-  const formatDate = (dateString: string) => {
+  // const formatDate = (dateString: string) => {
+  //   const date = new Date(dateString);
+  //   return date.toLocaleDateString('en-IN', { 
+  //     day: '2-digit', 
+  //     month: 'short', 
+  //     year: 'numeric' 
+  //   });
+  // };
+  const formatDate = (dateString?: string | null) => {
+    if (!dateString) return 'No date';
+
     const date = new Date(dateString);
     return date.toLocaleDateString('en-IN', { 
       day: '2-digit', 
@@ -131,7 +141,16 @@ const API_URL = "";
     });
   };
 
-  const formatTime = (timeString: string) => {
+  // const formatTime = (timeString: string) => {
+  //   const [hours, minutes] = timeString.split(':');
+  //   const hour = parseInt(hours);
+  //   const ampm = hour >= 12 ? 'PM' : 'AM';
+  //   const displayHour = hour % 12 || 12;
+  //   return `${displayHour}:${minutes} ${ampm}`;
+  // };
+  const formatTime = (timeString?: string | null) => {
+    if (!timeString) return 'No time';
+
     const [hours, minutes] = timeString.split(':');
     const hour = parseInt(hours);
     const ampm = hour >= 12 ? 'PM' : 'AM';
@@ -218,7 +237,9 @@ const API_URL = "";
                           <p className="text-sm font-medium text-gray-900">
                             {formatDate(interaction.follow_up_date)}
                           </p>
-                          <p className="text-sm text-gray-600">{formatTime(interaction.follow_up_time)}</p>
+                          <p className="text-sm text-gray-600">
+                            {interaction.follow_up_time ? formatTime(interaction.follow_up_time) : 'No time'}
+                          </p>                        
                         </div>
                         <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getPriorityColor(interaction.priority)}`}>
                           {interaction.priority_display}
